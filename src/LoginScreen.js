@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import Logo from './Logo';
 import { loginCliente, mensajeError } from './api';
 
@@ -79,8 +80,8 @@ export default function LoginScreen({ onLogin }) {
               secureTextEntry={!verPin}
               maxLength={6}
             />
-            <Pressable style={s.ojo} onPress={() => setVerPin((v) => !v)}>
-              <Text style={s.ojoTxt}>{verPin ? 'Ocultar' : 'Ver'}</Text>
+            <Pressable style={s.ojo} onPress={() => setVerPin((v) => !v)} hitSlop={8}>
+              <Ionicons name={verPin ? 'eye-off-outline' : 'eye-outline'} size={22} color="#6b7280" />
             </Pressable>
           </View>
 
