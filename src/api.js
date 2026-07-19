@@ -34,6 +34,11 @@ export const getMisMovimientos = async () => {
   return data;
 };
 
+export const getPromocionesActivas = async () => {
+  const { data } = await api.get('/portal/promociones');
+  return data;
+};
+
 // Mensaje amigable: distingue "sin conexión" de error del servidor
 export const mensajeError = (err, fallback = 'Ocurrió un error') => {
   if (err?.response) return err.response.data?.message || fallback;

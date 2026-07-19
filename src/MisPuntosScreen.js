@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { getMisPuntos, getMisMovimientos, mensajeError } from './api';
+import { useTheme } from './theme';
 
 const fmtFecha = (f) => {
   if (!f) return '';
@@ -11,7 +12,9 @@ const fmtFecha = (f) => {
   return d.toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-export default function MisPuntosScreen({ onLogout }) {
+export default function MisPuntosScreen() {
+  const { colors } = useTheme();
+  const s = estilos(colors);
   const [datos, setDatos] = useState(null);
   const [movs, setMovs] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -33,26 +36,20 @@ export default function MisPuntosScreen({ onLogout }) {
 
   useEffect(() => { cargar(); }, []);
 
-  const salir = async () => {
-    await AsyncStorage.removeItem('portal_token');
-    onLogout();
-  };
-
   if (cargando) {
     return (
       <View style={s.centro}>
-        <ActivityIndicator size="large" color="#E5388A" />
+        <ActivityIndicator size="large" color={colors.pink} />
         <Text style={s.cargandoTxt}>Cargando tus puntos…</Text>
       </View>
     );
   }
 
-  if (error && !datos) {
+  if (!datos) {
     return (
       <View style={s.centro}>
-        <Text style={s.errorTxt}>{error}</Text>
+        <Text style={s.errorTxt}>{error || 'No se pudieron cargar tus datos.'}</Text>
         <Pressable style={s.btn} onPress={cargar}><Text style={s.btnTxt}>Reintentar</Text></Pressable>
-        <Pressable style={s.linkSalir} onPress={salir}><Text style={s.linkSalirTxt}>Salir</Text></Pressable>
       </View>
     );
   }
@@ -60,22 +57,21 @@ export default function MisPuntosScreen({ onLogout }) {
   return (
     <ScrollView
       style={s.pantalla}
-      contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-      refreshControl={<RefreshControl refreshing={false} onRefresh={cargar} />}
+      contentContainerStyle={{ padding: 16, paddingBottom: 30 }}
+      refreshControl={<RefreshControl refreshing={false} onRefresh={cargar} tintColor={colors.pink} />}
     >
       <View style={s.header}>
-        <View>
-          <Text style={s.hola}>Hola,</Text>
-          <Text style={s.nombre}>{datos.nombres} {datos.apellidos}</Text>
-        </View>
-        <Pressable style={s.salir} onPress={salir}><Text style={s.salirTxt}>Salir</Text></Pressable>
+        <Text style={s.hola}>Hola,</Text>
+        <Text style={s.nombre}>{datos.nombres} {datos.apellidos}</Text>
       </View>
 
       {/* Tarjeta de puntos */}
       <View style={s.puntosCard}>
         <Text style={s.puntosLabel}>Tus puntos</Text>
         <Text style={s.puntosNum}>{datos.puntos_acumulados}</Text>
-        <Text style={s.puntosValor}>equivalen a <Text style={s.puntosValorFuerte}>${datos.valor_en_dinero.toFixed(2)}</Text></Text>
+        <View style={s.reglas}>
+          <Text style={s.reglaChip}>$1 = 1 punto</Text>
+        </View>
         <Text style={s.doc}>{datos.tipo_documento}: {datos.numero_documento}</Text>
       </View>
 
@@ -92,18 +88,24 @@ export default function MisPuntosScreen({ onLogout }) {
 
       {tab === 'recompensas' && (
         <View style={{ gap: 10 }}>
+          <View style={s.avisoBanner}>
+            <Ionicons name="storefront" size={20} color={colors.pink} />
+            <Text style={s.avisoBannerTxt}>El canje de puntos se realiza en recepción del hotel.</Text>
+          </View>
           {datos.recompensas.map((r) => (
             <View key={r.id} style={[s.recompensa, r.alcanzable && s.recompensaOk]}>
               <View style={{ flex: 1 }}>
                 <Text style={s.recompensaNombre}>{r.nombre}</Text>
-                <Text style={s.recompensaSub}>{r.puntos} pts · ${r.valor.toFixed(2)}</Text>
+                <Text style={s.recompensaSub}>
+                  {r.puntos} pts
+                  {r.tipo ? <Text style={s.recompensaTipo}> · Habitación {r.tipo}</Text> : null}
+                </Text>
               </View>
               {r.alcanzable
                 ? <Text style={[s.badge, s.badgeOk]}>¡Ya puedes!</Text>
                 : <Text style={s.badge}>Faltan {r.faltan}</Text>}
             </View>
           ))}
-          <Text style={s.aviso}>El canje se realiza en recepción del hotel.</Text>
         </View>
       )}
 
@@ -130,49 +132,49 @@ export default function MisPuntosScreen({ onLogout }) {
   );
 }
 
-const s = StyleSheet.create({
-  pantalla: { flex: 1, backgroundColor: '#f4f5fb' },
-  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f4f5fb', padding: 24 },
-  cargandoTxt: { color: '#6b7280', marginTop: 12 },
-  errorTxt: { color: '#6b7280', textAlign: 'center', marginBottom: 16 },
+const estilos = (c) => StyleSheet.create({
+  pantalla: { flex: 1, backgroundColor: c.bg },
+  centro: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.bg, padding: 24 },
+  cargandoTxt: { color: c.muted, marginTop: 12 },
+  errorTxt: { color: c.muted, textAlign: 'center', marginBottom: 16 },
 
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, marginTop: 8 },
-  hola: { fontSize: 13, color: '#6b7280' },
-  nombre: { fontSize: 19, fontWeight: '800', color: '#0A1259' },
-  salir: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#e2e4ee', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 14 },
-  salirTxt: { fontSize: 13, fontWeight: '700', color: '#1a1f4b' },
+  header: { marginBottom: 16, marginTop: 4 },
+  hola: { fontSize: 13, color: c.muted },
+  nombre: { fontSize: 20, fontWeight: '800', color: c.text },
 
-  puntosCard: { backgroundColor: '#0A1259', borderRadius: 22, padding: 26, alignItems: 'center', marginBottom: 18 },
+  puntosCard: { backgroundColor: c.pointsCard, borderRadius: 22, padding: 26, alignItems: 'center', marginBottom: 18 },
   puntosLabel: { fontSize: 14, color: '#c9cef2' },
   puntosNum: { fontSize: 56, fontWeight: '800', color: '#fff', lineHeight: 62, marginVertical: 4 },
   puntosValor: { fontSize: 15, color: '#e7e9fb' },
   puntosValorFuerte: { color: '#ffd9ec', fontWeight: '800' },
+  reglas: { flexDirection: 'row', gap: 8, marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' },
+  reglaChip: { fontSize: 12, fontWeight: '700', color: '#fff', backgroundColor: 'rgba(255,255,255,0.14)', paddingHorizontal: 11, paddingVertical: 5, borderRadius: 20, overflow: 'hidden' },
   doc: { marginTop: 12, fontSize: 12, color: '#a9b0e0' },
 
-  tabs: { flexDirection: 'row', backgroundColor: '#eceefa', borderRadius: 13, padding: 5, gap: 6, marginBottom: 16 },
+  tabs: { flexDirection: 'row', backgroundColor: c.chip, borderRadius: 13, padding: 5, gap: 6, marginBottom: 16 },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
-  tabActivo: { backgroundColor: '#fff' },
-  tabTxt: { fontSize: 14, fontWeight: '700', color: '#6b7280' },
-  tabTxtActivo: { color: '#0A1259' },
+  tabActivo: { backgroundColor: c.pink },
+  tabTxt: { fontSize: 14, fontWeight: '700', color: c.muted },
+  tabTxtActivo: { color: '#fff' },
 
-  recompensa: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#edeef6', borderRadius: 15, padding: 14 },
-  recompensaOk: { borderColor: '#bfe6c7', backgroundColor: '#e8f5e9' },
-  recompensaNombre: { fontSize: 15, fontWeight: '700', color: '#1a1f4b' },
-  recompensaSub: { fontSize: 13, color: '#6b7280', marginTop: 2 },
-  badge: { fontSize: 12, fontWeight: '700', color: '#6b7280', backgroundColor: '#eef0fb', paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, overflow: 'hidden' },
-  badgeOk: { backgroundColor: '#16a34a', color: '#fff' },
-  aviso: { textAlign: 'center', fontSize: 12, color: '#6b7280', marginTop: 6 },
+  recompensa: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, borderRadius: 15, padding: 14 },
+  recompensaOk: { borderColor: c.okBorder, backgroundColor: c.okBg },
+  recompensaNombre: { fontSize: 15, fontWeight: '700', color: c.text },
+  recompensaSub: { fontSize: 13, color: c.muted, marginTop: 2 },
+  recompensaTipo: { color: c.pink, fontWeight: '800' },
+  badge: { fontSize: 12, fontWeight: '700', color: c.muted, backgroundColor: c.chip, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20, overflow: 'hidden' },
+  badgeOk: { backgroundColor: c.ok, color: '#fff' },
+  avisoBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.chip, borderRadius: 12, padding: 13, borderLeftWidth: 4, borderLeftColor: c.pink, marginBottom: 2 },
+  avisoBannerTxt: { flex: 1, fontSize: 13.5, fontWeight: '700', color: c.text },
 
-  mov: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#edeef6', borderRadius: 14, padding: 13 },
-  movDesc: { fontSize: 14, fontWeight: '600', color: '#1a1f4b' },
-  movFecha: { fontSize: 12, color: '#6b7280', marginTop: 2 },
+  mov: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderWidth: 1.5, borderColor: c.border, borderRadius: 14, padding: 13 },
+  movDesc: { fontSize: 14, fontWeight: '600', color: c.text },
+  movFecha: { fontSize: 12, color: c.muted, marginTop: 2 },
   movPts: { fontSize: 16, fontWeight: '800' },
-  movPos: { color: '#16a34a' },
-  movNeg: { color: '#E5388A' },
-  vacio: { textAlign: 'center', color: '#6b7280', paddingVertical: 30 },
+  movPos: { color: c.ok },
+  movNeg: { color: c.pink },
+  vacio: { textAlign: 'center', color: c.muted, paddingVertical: 30 },
 
-  btn: { backgroundColor: '#E5388A', borderRadius: 13, paddingVertical: 14, paddingHorizontal: 28, alignItems: 'center' },
+  btn: { backgroundColor: c.pink, borderRadius: 13, paddingVertical: 14, paddingHorizontal: 28, alignItems: 'center' },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  linkSalir: { marginTop: 14 },
-  linkSalirTxt: { color: '#6b7280', fontWeight: '600' },
 });

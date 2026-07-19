@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { View, StatusBar } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeProvider, useTheme, NAVY } from './src/theme';
 import LoginScreen from './src/LoginScreen';
-import MisPuntosScreen from './src/MisPuntosScreen';
+import Home from './src/Home';
+import Logo from './src/Logo';
 
-export default function App() {
+function Root() {
+  const { colors, dark } = useTheme();
   const [logueado, setLogueado] = useState(false);
   const [listo, setListo] = useState(false);
 
@@ -15,25 +19,39 @@ export default function App() {
       .finally(() => setListo(true));
   }, []);
 
+  const fondo = logueado ? colors.bg : colors.navy;
+
   if (!listo) {
     return (
-      <View style={styles.cargando}>
-        <ActivityIndicator size="large" color="#E5388A" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: NAVY }}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+        <View style={{ width: 120, height: 120, borderRadius: 26, overflow: 'hidden' }}>
+          <Logo size={120} color="#E5388A" />
+        </View>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#0A1259" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: fondo }} edges={['top']}>
+      <StatusBar
+        barStyle={logueado && !dark ? 'dark-content' : 'light-content'}
+        backgroundColor="transparent"
+        translucent
+      />
       {logueado
-        ? <MisPuntosScreen onLogout={() => setLogueado(false)} />
+        ? <Home onLogout={() => setLogueado(false)} />
         : <LoginScreen onLogin={() => setLogueado(true)} />}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#0A1259' },
-  cargando: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0A1259' },
-});
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <Root />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}

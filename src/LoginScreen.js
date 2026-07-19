@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from './Logo';
 import { loginCliente, mensajeError } from './api';
+import { formatDocumento, esDuiValido, esPasaporteValido } from './formato';
 
 export default function LoginScreen({ onLogin }) {
   const [tipo, setTipo] = useState('DUI');
@@ -16,7 +17,12 @@ export default function LoginScreen({ onLogin }) {
   const [cargando, setCargando] = useState(false);
 
   const entrar = async () => {
-    if (!numero.trim()) return Alert.alert('Falta el documento', 'Ingresa tu número de documento');
+    if (tipo === 'DUI' && !esDuiValido(numero)) {
+      return Alert.alert('DUI inválido', 'El DUI debe tener el formato 00000000-0');
+    }
+    if (tipo === 'Pasaporte' && !esPasaporteValido(numero)) {
+      return Alert.alert('Pasaporte inválido', 'El pasaporte debe tener de 6 a 12 caracteres (letras y números)');
+    }
     if (!/^\d{4,6}$/.test(pin)) return Alert.alert('PIN inválido', 'El PIN debe tener entre 4 y 6 dígitos');
 
     setCargando(true);
@@ -47,7 +53,7 @@ export default function LoginScreen({ onLogin }) {
             {['DUI', 'Pasaporte'].map((t) => (
               <Pressable
                 key={t}
-                onPress={() => setTipo(t)}
+                onPress={() => { setTipo(t); setNumero(''); }}
                 style={[s.toggleBtn, tipo === t && s.toggleActivo]}
               >
                 <Text style={[s.toggleTxt, tipo === t && s.toggleTxtActivo]}>{t}</Text>
@@ -60,18 +66,19 @@ export default function LoginScreen({ onLogin }) {
           <TextInput
             style={s.input}
             value={numero}
-            onChangeText={setNumero}
+            onChangeText={(t) => setNumero(formatDocumento(tipo, t))}
             placeholder={tipo === 'DUI' ? '00000000-0' : 'Ej. A1234567'}
             placeholderTextColor="#A6AEEF"
-            keyboardType={tipo === 'DUI' ? 'numbers-and-punctuation' : 'default'}
+            keyboardType={tipo === 'DUI' ? 'number-pad' : 'default'}
             autoCapitalize="characters"
+            maxLength={tipo === 'DUI' ? 10 : 12}
           />
 
           {/* PIN */}
           <Text style={s.label}>PIN (4 a 6 dígitos)</Text>
-          <View style={s.pinWrap}>
+          <View style={s.pinBox}>
             <TextInput
-              style={[s.input, { flex: 1, marginBottom: 0, letterSpacing: 4 }]}
+              style={s.pinInput}
               value={pin}
               onChangeText={(t) => setPin(t.replace(/[^0-9]/g, ''))}
               placeholder="••••"
@@ -80,7 +87,7 @@ export default function LoginScreen({ onLogin }) {
               secureTextEntry={!verPin}
               maxLength={6}
             />
-            <Pressable style={s.ojo} onPress={() => setVerPin((v) => !v)} hitSlop={8}>
+            <Pressable onPress={() => setVerPin((v) => !v)} hitSlop={8}>
               <Ionicons name={verPin ? 'eye-off-outline' : 'eye-outline'} size={22} color="#6b7280" />
             </Pressable>
           </View>
@@ -112,12 +119,11 @@ const s = StyleSheet.create({
   },
   toggle: { flexDirection: 'row', backgroundColor: '#eceefa', borderRadius: 13, padding: 5, gap: 6 },
   toggleBtn: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
-  toggleActivo: { backgroundColor: '#fff' },
+  toggleActivo: { backgroundColor: '#E5388A' },
   toggleTxt: { fontSize: 14, fontWeight: '700', color: '#6b7280' },
-  toggleTxtActivo: { color: '#0A1259' },
-  pinWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ojo: { paddingHorizontal: 12, paddingVertical: 12 },
-  ojoTxt: { color: '#E5388A', fontWeight: '700', fontSize: 13 },
+  toggleTxtActivo: { color: '#fff' },
+  pinBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#e2e4ee', borderRadius: 13, paddingRight: 12, marginBottom: 4 },
+  pinInput: { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1a1f4b', letterSpacing: 4 },
   btn: { backgroundColor: '#E5388A', borderRadius: 13, paddingVertical: 15, alignItems: 'center', marginTop: 16 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
   nota: { fontSize: 12, color: '#6b7280', marginTop: 16, lineHeight: 18, textAlign: 'center' },
