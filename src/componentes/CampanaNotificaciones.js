@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, Text, Pressable, Modal, StyleSheet, ScrollView, ActivityIndicator,
+  View, Text, Pressable, Modal, StyleSheet, ScrollView, ActivityIndicator, AppState,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -69,6 +69,19 @@ export default function CampanaNotificaciones() {
   useEffect(() => {
     AsyncStorage.getItem(CLAVE_VISTO).then((v) => setUltimoVisto(Number(v) || 0));
     cargar();
+  }, [cargar]);
+
+  // Refresca solo al volver a la app (primer plano), sin recargar ni cerrar sesión:
+  // así un movimiento recién hecho aparece cuando el cliente vuelve a mirar su teléfono.
+  const estadoApp = useRef(AppState.currentState);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (siguiente) => {
+      if (estadoApp.current.match(/inactive|background/) && siguiente === 'active') {
+        cargar();
+      }
+      estadoApp.current = siguiente;
+    });
+    return () => sub.remove();
   }, [cargar]);
 
   const noLeidas = movimientos.filter(
