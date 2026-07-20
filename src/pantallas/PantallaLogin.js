@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
@@ -6,40 +6,90 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../componentes/Logo';
-import { iniciarSesionCliente, mensajeError } from '../servicios/api';
+import { solicitarCodigo, verificarCodigo, mensajeError } from '../servicios/api';
 import { formatearDocumento, esDuiValido, esPasaporteValido } from '../utilidades/formato';
 
+const SEGUNDOS_REENVIO = 60;
+
 export default function PantallaLogin({ alIniciarSesion }) {
+  const [paso, setPaso] = useState('documento'); // 'documento' | 'codigo'
   const [tipo, setTipo] = useState('DUI');
   const [numero, setNumero] = useState('');
-  const [pin, setPin] = useState('');
-  const [verPin, setVerPin] = useState(false);
+  const [codigo, setCodigo] = useState('');
+  const [destino, setDestino] = useState('');
+  const [modoDev, setModoDev] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const [segundos, setSegundos] = useState(0);
+  const refCodigo = useRef(null);
+  const refScroll = useRef(null);
 
-  const entrar = async () => {
+  const bajarAlCampo = () => setTimeout(() => refScroll.current?.scrollToEnd({ animated: true }), 120);
+
+  // Cuenta regresiva para reenviar el código
+  useEffect(() => {
+    if (segundos <= 0) return;
+    const id = setInterval(() => setSegundos((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [segundos]);
+
+  // Al pasar al paso del código, enfoca la primera casilla para que salga el teclado
+  useEffect(() => {
+    if (paso === 'codigo') {
+      const t = setTimeout(() => refCodigo.current?.focus(), 350);
+      return () => clearTimeout(t);
+    }
+  }, [paso]);
+
+  // Verifica automáticamente cuando se completan los 6 dígitos
+  useEffect(() => {
+    if (paso === 'codigo' && codigo.length === 6 && !cargando) confirmar();
+  }, [codigo]);
+
+  const enviarCodigo = async () => {
     if (tipo === 'DUI' && !esDuiValido(numero)) {
       return Alert.alert('DUI inválido', 'El DUI debe tener el formato 00000000-0');
     }
     if (tipo === 'Pasaporte' && !esPasaporteValido(numero)) {
       return Alert.alert('Pasaporte inválido', 'El pasaporte debe tener de 6 a 12 caracteres (letras y números)');
     }
-    if (!/^\d{4,6}$/.test(pin)) return Alert.alert('PIN inválido', 'El PIN debe tener entre 4 y 6 dígitos');
-
     setCargando(true);
     try {
-      const respuesta = await iniciarSesionCliente({ tipo_documento: tipo, numero_documento: numero.trim(), pin });
-      await AsyncStorage.setItem('portal_token', respuesta.token);
-      alIniciarSesion(respuesta);
+      const r = await solicitarCodigo({ tipo_documento: tipo, numero_documento: numero.trim() });
+      setDestino(r.destino || 'tu correo');
+      setModoDev(!!r.modo_dev);
+      setCodigo('');
+      setSegundos(SEGUNDOS_REENVIO);
+      setPaso('codigo');
     } catch (error) {
-      Alert.alert('No se pudo entrar', mensajeError(error, 'No se pudo iniciar sesión'));
+      Alert.alert('No se pudo enviar', mensajeError(error, 'No se pudo enviar el código'));
     } finally {
       setCargando(false);
     }
   };
 
+  const confirmar = async () => {
+    if (codigo.length !== 6) return;
+    setCargando(true);
+    try {
+      const r = await verificarCodigo({ tipo_documento: tipo, numero_documento: numero.trim(), codigo });
+      await AsyncStorage.setItem('portal_token', r.token);
+      alIniciarSesion(r);
+    } catch (error) {
+      setCodigo('');
+      Alert.alert('Código incorrecto', mensajeError(error, 'No se pudo verificar el código'));
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const reenviar = async () => {
+    if (segundos > 0) return;
+    await enviarCodigo();
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={estilos.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={refScroll} contentContainerStyle={estilos.scroll} keyboardShouldPersistTaps="handled">
         <View style={estilos.tarjeta}>
           <View style={estilos.cajaLogo}>
             <Logo tamano={120} color="#E5388A" />
@@ -47,59 +97,87 @@ export default function PantallaLogin({ alIniciarSesion }) {
           <Text style={estilos.marca}>Punta Diamantes</Text>
           <Text style={estilos.sub}>Consulta tus puntos de fidelidad</Text>
 
-          {/* Tipo de documento */}
-          <Text style={estilos.etiqueta}>Tipo de documento</Text>
-          <View style={estilos.selector}>
-            {['DUI', 'Pasaporte'].map((opcion) => (
-              <Pressable
-                key={opcion}
-                onPress={() => { setTipo(opcion); setNumero(''); }}
-                style={[estilos.selectorBtn, tipo === opcion && estilos.selectorActivo]}
-              >
-                <Text style={[estilos.selectorTxt, tipo === opcion && estilos.selectorTxtActivo]}>{opcion}</Text>
+          {paso === 'documento' ? (
+            <>
+              {/* Tipo de documento */}
+              <Text style={estilos.etiqueta}>Tipo de documento</Text>
+              <View style={estilos.selector}>
+                {['DUI', 'Pasaporte'].map((opcion) => (
+                  <Pressable
+                    key={opcion}
+                    onPress={() => { setTipo(opcion); setNumero(''); }}
+                    style={[estilos.selectorBtn, tipo === opcion && estilos.selectorActivo]}
+                  >
+                    <Text style={[estilos.selectorTxt, tipo === opcion && estilos.selectorTxtActivo]}>{opcion}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Número */}
+              <Text style={estilos.etiqueta}>N° de documento</Text>
+              <TextInput
+                style={estilos.campo}
+                value={numero}
+                onChangeText={(texto) => setNumero(formatearDocumento(tipo, texto))}
+                onFocus={bajarAlCampo}
+                placeholder={tipo === 'DUI' ? '00000000-0' : 'Ej. A1234567'}
+                placeholderTextColor="#A6AEEF"
+                keyboardType={tipo === 'DUI' ? 'number-pad' : 'default'}
+                autoCapitalize="characters"
+                maxLength={tipo === 'DUI' ? 10 : 12}
+              />
+
+              <Pressable style={[estilos.btn, cargando && { opacity: 0.6 }]} onPress={enviarCodigo} disabled={cargando}>
+                {cargando ? <ActivityIndicator color="#fff" /> : <Text style={estilos.btnTxt}>Enviar código</Text>}
               </Pressable>
-            ))}
-          </View>
 
-          {/* Número */}
-          <Text style={estilos.etiqueta}>N° de documento</Text>
-          <TextInput
-            style={estilos.campo}
-            value={numero}
-            onChangeText={(texto) => setNumero(formatearDocumento(tipo, texto))}
-            placeholder={tipo === 'DUI' ? '00000000-0' : 'Ej. A1234567'}
-            placeholderTextColor="#A6AEEF"
-            keyboardType={tipo === 'DUI' ? 'number-pad' : 'default'}
-            autoCapitalize="characters"
-            maxLength={tipo === 'DUI' ? 10 : 12}
-          />
+              <Text style={estilos.nota}>
+                Te enviaremos un código de verificación a tu correo registrado para un ingreso único y seguro.
+              </Text>
+            </>
+          ) : (
+            <>
+              {/* Paso 2: código */}
+              <Text style={estilos.tituloCodigo}>Ingresa el código</Text>
+              <Text style={estilos.sub}>Lo enviamos a {destino}</Text>
 
-          {/* PIN */}
-          <Text style={estilos.etiqueta}>PIN (4 a 6 dígitos)</Text>
-          <View style={estilos.cajaPin}>
-            <TextInput
-              style={estilos.campoPin}
-              value={pin}
-              onChangeText={(texto) => setPin(texto.replace(/[^0-9]/g, ''))}
-              placeholder="••••"
-              placeholderTextColor="#A6AEEF"
-              keyboardType="number-pad"
-              secureTextEntry={!verPin}
-              maxLength={6}
-            />
-            <Pressable onPress={() => setVerPin((v) => !v)} hitSlop={8}>
-              <Ionicons name={verPin ? 'eye-off-outline' : 'eye-outline'} size={22} color="#6b7280" />
-            </Pressable>
-          </View>
+              <Pressable style={estilos.cajasCodigo} onPress={() => refCodigo.current?.focus()}>
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <View key={i} style={[estilos.cajaDigito, codigo.length === i && estilos.cajaDigitoActiva]}>
+                    <Text style={estilos.digito}>{codigo[i] ?? ''}</Text>
+                  </View>
+                ))}
+              </Pressable>
+              <TextInput
+                ref={refCodigo}
+                value={codigo}
+                onChangeText={(texto) => setCodigo(texto.replace(/[^0-9]/g, '').slice(0, 6))}
+                onFocus={bajarAlCampo}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+                style={estilos.inputOculto}
+              />
 
-          <Pressable style={[estilos.btn, cargando && { opacity: 0.6 }]} onPress={entrar} disabled={cargando}>
-            {cargando ? <ActivityIndicator color="#fff" /> : <Text style={estilos.btnTxt}>Ingresar</Text>}
-          </Pressable>
+              {cargando && <ActivityIndicator color="#E5388A" style={{ marginTop: 14 }} />}
 
-          <Text style={estilos.nota}>
-            Si es tu primera vez, el PIN que ingreses quedará guardado como tu clave.
-            Si no reconoces tus datos, contacta al hotel.
-          </Text>
+              {modoDev && (
+                <Text style={estilos.notaDev}>
+                  Modo prueba: el código está en la consola del backend (no se configuró el correo).
+                </Text>
+              )}
+
+              <Pressable onPress={reenviar} disabled={segundos > 0} style={{ marginTop: 18 }}>
+                <Text style={[estilos.reenviar, segundos > 0 && estilos.reenviarInactivo]}>
+                  {segundos > 0 ? `Reenviar código en ${segundos}s` : 'Reenviar código'}
+                </Text>
+              </Pressable>
+
+              <Pressable onPress={() => { setPaso('documento'); setCodigo(''); }} style={{ marginTop: 14 }}>
+                <Text style={estilos.volver}>‹ Cambiar documento</Text>
+              </Pressable>
+            </>
+          )}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -122,9 +200,22 @@ const estilos = StyleSheet.create({
   selectorActivo: { backgroundColor: '#E5388A' },
   selectorTxt: { fontSize: 14, fontWeight: '700', color: '#6b7280' },
   selectorTxtActivo: { color: '#fff' },
-  cajaPin: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#e2e4ee', borderRadius: 13, paddingRight: 12, marginBottom: 4 },
-  campoPin: { flex: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: '#1a1f4b', letterSpacing: 4 },
   btn: { backgroundColor: '#E5388A', borderRadius: 13, paddingVertical: 15, alignItems: 'center', marginTop: 16 },
   btnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
   nota: { fontSize: 12, color: '#6b7280', marginTop: 16, lineHeight: 18, textAlign: 'center' },
+
+  // Paso código
+  tituloCodigo: { fontSize: 18, fontWeight: '800', color: '#0A1259', textAlign: 'center' },
+  cajasCodigo: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 4 },
+  cajaDigito: {
+    width: 46, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e4ee',
+    backgroundColor: '#f7f8fc', alignItems: 'center', justifyContent: 'center',
+  },
+  cajaDigitoActiva: { borderColor: '#E5388A', backgroundColor: '#fff' },
+  digito: { fontSize: 24, fontWeight: '800', color: '#0A1259' },
+  inputOculto: { position: 'absolute', opacity: 0, height: 1, width: 1 },
+  notaDev: { fontSize: 12, color: '#b45309', backgroundColor: '#fff7ed', padding: 10, borderRadius: 10, marginTop: 16, textAlign: 'center' },
+  reenviar: { color: '#E5388A', fontWeight: '700', fontSize: 14, textAlign: 'center' },
+  reenviarInactivo: { color: '#9ca3af' },
+  volver: { color: '#6b7280', fontWeight: '600', fontSize: 14, textAlign: 'center' },
 });

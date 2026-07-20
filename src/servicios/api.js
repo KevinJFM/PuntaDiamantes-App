@@ -19,8 +19,14 @@ api.interceptors.request.use(async (config) => {
 export default api;
 
 // ---------- Servicios del portal ----------
-export const iniciarSesionCliente = async (datos) => {
-  const { data } = await api.post('/portal/login', datos);
+// Acceso con código por correo (DUI + código de 6 dígitos)
+export const solicitarCodigo = async (datos) => {
+  const { data } = await api.post('/portal/solicitar-codigo', datos);
+  return data;
+};
+
+export const verificarCodigo = async (datos) => {
+  const { data } = await api.post('/portal/verificar-codigo', datos);
   return data;
 };
 
