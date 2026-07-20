@@ -1,25 +1,18 @@
 {
   "expo": {
-    "name": "Mis Puntos",
+    "name": "Punta Diamantes",
     "slug": "puntadiamantes-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-pd.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0A1259"
-    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0A1259",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#E5388A",
+        "foregroundImage": "./assets/adaptive-pd.png"
       }
     },
     "web": {

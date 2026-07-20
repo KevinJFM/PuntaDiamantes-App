@@ -258,6 +258,6 @@ l-53 46 -41 -49 c-120 -141 -178 -174 -303 -174 -101 0 -139 14 -188 71 -34
       </g>
     </svg>`;
 
-export default function Logo({ size = 96, color = '#E5388A' }) {
-  return <SvgXml xml={xml(color)} width={size} height={size} />;
+export default function Logo({ tamano = 96, color = '#E5388A' }) {
+  return <SvgXml xml={xml(color)} width={tamano} height={tamano} />;
 }

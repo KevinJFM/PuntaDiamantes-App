@@ -7,4 +7,4 @@
 //  IP detectada de esta PC: 192.168.1.2
 //  Si tu PC cambia de IP, actualízala aquí.
 // ============================================================
-export const API_URL = 'http://192.168.1.2:4000/api';
+export const URL_API = 'http://192.168.1.2:4000/api';

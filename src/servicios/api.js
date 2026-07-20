@@ -1,9 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from './config';
+import { URL_API } from '../configuracion/configuracion';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: URL_API,
   timeout: 15000,
 });
 
@@ -19,28 +19,28 @@ api.interceptors.request.use(async (config) => {
 export default api;
 
 // ---------- Servicios del portal ----------
-export const loginCliente = async (datos) => {
+export const iniciarSesionCliente = async (datos) => {
   const { data } = await api.post('/portal/login', datos);
   return data;
 };
 
-export const getMisPuntos = async () => {
+export const obtenerMisPuntos = async () => {
   const { data } = await api.get('/portal/mis-puntos');
   return data;
 };
 
-export const getMisMovimientos = async () => {
+export const obtenerMisMovimientos = async () => {
   const { data } = await api.get('/portal/mis-movimientos');
   return data;
 };
 
-export const getPromocionesActivas = async () => {
+export const obtenerPromocionesActivas = async () => {
   const { data } = await api.get('/portal/promociones');
   return data;
 };
 
 // Mensaje amigable: distingue "sin conexión" de error del servidor
-export const mensajeError = (err, fallback = 'Ocurrió un error') => {
-  if (err?.response) return err.response.data?.message || fallback;
+export const mensajeError = (error, respaldo = 'Ocurrió un error') => {
+  if (error?.response) return error.response.data?.message || respaldo;
   return 'No se pudo conectar. Revisa tu conexión y la IP del servidor.';
 };
