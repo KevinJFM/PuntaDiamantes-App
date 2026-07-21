@@ -7,9 +7,11 @@
     "icon": "./assets/icon-pd.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.puntadiamantes.app"
     },
     "android": {
+      "package": "com.puntadiamantes.app",
       "adaptiveIcon": {
         "backgroundColor": "#E5388A",
         "foregroundImage": "./assets/adaptive-pd.png"
@@ -17,6 +19,28 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "color": "#E5388A"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7db55005-75dd-476a-9cf5-9c12b82cfcf8"
+      }
+    },
+    "owner": "kevinjavier"
   }
 }

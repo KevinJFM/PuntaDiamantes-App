@@ -45,6 +45,12 @@ export const obtenerPromocionesActivas = async () => {
   return data;
 };
 
+// Registra el token de notificaciones push del dispositivo para este cliente
+export const registrarToken = async (token) => {
+  const { data } = await api.post('/portal/registrar-token', { token });
+  return data;
+};
+
 // Mensaje amigable: distingue "sin conexión" de error del servidor
 export const mensajeError = (error, respaldo = 'Ocurrió un error') => {
   if (error?.response) return error.response.data?.message || respaldo;

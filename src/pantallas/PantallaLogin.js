@@ -1,17 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../componentes/Logo';
+import { usarAvisos } from '../componentes/Avisos';
 import { solicitarCodigo, verificarCodigo, mensajeError } from '../servicios/api';
 import { formatearDocumento, esDuiValido, esPasaporteValido } from '../utilidades/formato';
 
 const SEGUNDOS_REENVIO = 60;
 
 export default function PantallaLogin({ alIniciarSesion }) {
+  const mostrarAviso = usarAvisos();
   const [paso, setPaso] = useState('documento'); // 'documento' | 'codigo'
   const [tipo, setTipo] = useState('DUI');
   const [numero, setNumero] = useState('');
@@ -47,10 +49,10 @@ export default function PantallaLogin({ alIniciarSesion }) {
 
   const enviarCodigo = async () => {
     if (tipo === 'DUI' && !esDuiValido(numero)) {
-      return Alert.alert('DUI inválido', 'El DUI debe tener el formato 00000000-0');
+      return mostrarAviso('error', 'DUI inválido', 'El DUI debe tener el formato 00000000-0');
     }
     if (tipo === 'Pasaporte' && !esPasaporteValido(numero)) {
-      return Alert.alert('Pasaporte inválido', 'El pasaporte debe tener de 6 a 12 caracteres (letras y números)');
+      return mostrarAviso('error', 'Pasaporte inválido', 'El pasaporte debe tener de 6 a 12 caracteres (letras y números)');
     }
     setCargando(true);
     try {
@@ -61,7 +63,7 @@ export default function PantallaLogin({ alIniciarSesion }) {
       setSegundos(SEGUNDOS_REENVIO);
       setPaso('codigo');
     } catch (error) {
-      Alert.alert('No se pudo enviar', mensajeError(error, 'No se pudo enviar el código'));
+      mostrarAviso('error', 'No se pudo enviar', mensajeError(error, 'No se pudo enviar el código'));
     } finally {
       setCargando(false);
     }
@@ -76,7 +78,7 @@ export default function PantallaLogin({ alIniciarSesion }) {
       alIniciarSesion(r);
     } catch (error) {
       setCodigo('');
-      Alert.alert('Código incorrecto', mensajeError(error, 'No se pudo verificar el código'));
+      mostrarAviso('error', 'Código incorrecto', mensajeError(error, 'No se pudo verificar el código'));
     } finally {
       setCargando(false);
     }

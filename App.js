@@ -3,6 +3,9 @@ import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProveedorTema, usarTema } from './src/tema/tema';
+import { ProveedorAvisos } from './src/componentes/Avisos';
+import { registrarParaPush } from './src/servicios/notificaciones';
+import { registrarToken } from './src/servicios/api';
 import PantallaLogin from './src/pantallas/PantallaLogin';
 import PantallaBienvenida from './src/pantallas/PantallaBienvenida';
 import PantallaTransicion from './src/pantallas/PantallaTransicion';
@@ -28,6 +31,14 @@ function Raiz() {
       })
       .finally(() => setListo(true));
   }, []);
+
+  // Cuando hay sesión, registra el dispositivo para notificaciones push
+  useEffect(() => {
+    if (!logueado) return;
+    registrarParaPush()
+      .then((token) => { if (token) registrarToken(token).catch(() => {}); })
+      .catch(() => {});
+  }, [logueado]);
 
   // Al ingresar (código correcto):
   //  - Primera vez de todas -> pantalla "Te damos la bienvenida" con botón Continuar
@@ -83,7 +94,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ProveedorTema>
-        <Raiz />
+        <ProveedorAvisos>
+          <Raiz />
+        </ProveedorAvisos>
       </ProveedorTema>
     </SafeAreaProvider>
   );
