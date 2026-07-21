@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usarTema } from '../tema/tema';
+import CampanaNotificaciones from '../componentes/CampanaNotificaciones';
 import PantallaMisPuntos from './PantallaMisPuntos';
 import PantallaPromociones from './PantallaPromociones';
 import PantallaConfiguracion from './PantallaConfiguracion';
@@ -21,6 +22,12 @@ export default function Navegacion({ alCerrarSesion }) {
 
   return (
     <View style={estilos.contenedor}>
+      {/* Encabezado superior con la campana de notificaciones a la derecha */}
+      <View style={estilos.header}>
+        <Text style={estilos.marca}>Punta Diamantes</Text>
+        <CampanaNotificaciones />
+      </View>
+
       <View style={estilos.pantalla}>
         {pestana === 'inicio' && <PantallaMisPuntos />}
         {pestana === 'promos' && <PantallaPromociones />}
@@ -51,6 +58,18 @@ export default function Navegacion({ alCerrarSesion }) {
 
 const crearEstilos = (c) => StyleSheet.create({
   contenedor: { flex: 1, backgroundColor: c.fondo },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    backgroundColor: c.fondoBarra,
+    borderBottomWidth: 1,
+    borderBottomColor: c.bordeBarra,
+  },
+  marca: { fontSize: 17, fontWeight: '800', color: c.rosa },
   pantalla: { flex: 1 },
   barra: {
     flexDirection: 'row',
