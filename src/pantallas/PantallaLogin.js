@@ -143,23 +143,27 @@ export default function PantallaLogin({ alIniciarSesion }) {
               <Text style={estilos.tituloCodigo}>Ingresa el código</Text>
               <Text style={estilos.sub}>Lo enviamos a {destino}</Text>
 
-              <Pressable style={estilos.cajasCodigo} onPress={() => refCodigo.current?.focus()}>
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <View key={i} style={[estilos.cajaDigito, codigo.length === i && estilos.cajaDigitoActiva]}>
-                    <Text style={estilos.digito}>{codigo[i] ?? ''}</Text>
-                  </View>
-                ))}
-              </Pressable>
-              <TextInput
-                ref={refCodigo}
-                value={codigo}
-                onChangeText={(texto) => setCodigo(texto.replace(/[^0-9]/g, '').slice(0, 6))}
-                onFocus={bajarAlCampo}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-                style={estilos.inputOculto}
-              />
+              <View style={estilos.cajasWrap}>
+                <View style={estilos.cajasCodigo} pointerEvents="none">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <View key={i} style={[estilos.cajaDigito, codigo.length === i && estilos.cajaDigitoActiva]}>
+                      <Text style={estilos.digito}>{codigo[i] ?? ''}</Text>
+                    </View>
+                  ))}
+                </View>
+                {/* Input real transparente encima de las casillas: tocar cualquier casilla lo enfoca */}
+                <TextInput
+                  ref={refCodigo}
+                  value={codigo}
+                  onChangeText={(texto) => setCodigo(texto.replace(/[^0-9]/g, '').slice(0, 6))}
+                  onFocus={bajarAlCampo}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                  caretHidden
+                  style={estilos.inputCodigo}
+                />
+              </View>
 
               {cargando && <ActivityIndicator color="#E5388A" style={{ marginTop: 14 }} />}
 
@@ -208,14 +212,15 @@ const estilos = StyleSheet.create({
 
   // Paso código
   tituloCodigo: { fontSize: 18, fontWeight: '800', color: '#0A1259', textAlign: 'center' },
-  cajasCodigo: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 4 },
+  cajasWrap: { position: 'relative', marginTop: 4 },
+  cajasCodigo: { flexDirection: 'row', justifyContent: 'center', gap: 8 },
   cajaDigito: {
     width: 46, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e4ee',
     backgroundColor: '#f7f8fc', alignItems: 'center', justifyContent: 'center',
   },
   cajaDigitoActiva: { borderColor: '#E5388A', backgroundColor: '#fff' },
   digito: { fontSize: 24, fontWeight: '800', color: '#0A1259' },
-  inputOculto: { position: 'absolute', opacity: 0, height: 1, width: 1 },
+  inputCodigo: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0 },
   notaDev: { fontSize: 12, color: '#b45309', backgroundColor: '#fff7ed', padding: 10, borderRadius: 10, marginTop: 16, textAlign: 'center' },
   reenviar: { color: '#E5388A', fontWeight: '700', fontSize: 14, textAlign: 'center' },
   reenviarInactivo: { color: '#9ca3af' },
