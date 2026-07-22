@@ -51,6 +51,12 @@ export const registrarToken = async (token) => {
   return data;
 };
 
+// Borra el token de notificaciones (al cerrar sesión)
+export const borrarToken = async () => {
+  const { data } = await api.post('/portal/borrar-token');
+  return data;
+};
+
 // Mensaje amigable: distingue "sin conexión" de error del servidor
 export const mensajeError = (error, respaldo = 'Ocurrió un error') => {
   if (error?.response) return error.response.data?.message || respaldo;

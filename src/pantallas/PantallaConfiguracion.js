@@ -2,6 +2,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import { borrarToken } from '../servicios/api';
 import { usarTema } from '../tema/tema';
 
 const VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -11,6 +12,7 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
   const estilos = crearEstilos(colores);
 
   const salir = async () => {
+    await borrarToken().catch(() => {}); // limpia el push_token en el backend
     await AsyncStorage.removeItem('portal_token');
     alCerrarSesion();
   };
