@@ -71,6 +71,12 @@ Android necesita credenciales de **Firebase Cloud Messaging (FCM V1)**:
    Elige **Android → Push Notifications (FCM V1)** → sube el JSON.
    (También se puede desde el panel: https://expo.dev → tu proyecto → Credentials.)
 
+### Tambien descargar descarga el google-services.json
+
+### Ve a la pestaña "General" → **descarga el google-services.json (el botón con ese nombre exacto).**
+
+### Cópialo a **C:\Users\kevin\Desktop\puntadiamantes-app\google-services.json.**
+
 ### iOS (APNs) — solo si algún día publican en iPhone
 Con una **cuenta de Apple Developer**, EAS configura los certificados de push (APNs) solo
 durante el build. No necesitas Mac.

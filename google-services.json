@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "725081802938",
+    "project_id": "punta-diamantes",
+    "storage_bucket": "punta-diamantes.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:725081802938:android:86712a662854b3ad7e5a83",
+        "android_client_info": {
+          "package_name": "com.puntadiamantes.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAooIh_4zkYUcZn_qD64yXsefqWjNFRSfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,7 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../componentes/Logo';
 import { usarAvisos } from '../componentes/Avisos';
-import { solicitarCodigo, verificarCodigo, mensajeError } from '../servicios/api';
+import { solicitarCodigo, verificarCodigo, registrarToken, mensajeError } from '../servicios/api';
+import { registrarParaPush } from '../servicios/notificaciones';
 import { formatearDocumento, esDuiValido, esPasaporteValido } from '../utilidades/formato';
 
 const SEGUNDOS_REENVIO = 60;
@@ -86,6 +87,16 @@ export default function PantallaLogin({ alIniciarSesion }) {
     try {
       const r = await verificarCodigo({ tipo_documento: tipo, numero_documento: numero.trim(), codigo });
       await AsyncStorage.setItem('portal_token', r.token);
+
+      // Registrar el token de notificaciones ahora que hay sesión (código correcto)
+      const push = await registrarParaPush();
+      if (push.ok && push.token) {
+        try { await registrarToken(push.token); } catch { /* no bloquear el ingreso */ }
+        mostrarAviso('exito', 'Notificaciones activadas', 'Recibirás avisos de tus puntos.');
+      } else {
+        mostrarAviso('info', 'Aviso de notificaciones', push.motivo || 'No se pudo activar');
+      }
+
       alIniciarSesion(r);
     } catch (error) {
       setCodigo('');

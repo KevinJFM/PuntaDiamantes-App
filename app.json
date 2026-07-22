@@ -12,6 +12,7 @@
     },
     "android": {
       "package": "com.puntadiamantes.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E5388A",
         "foregroundImage": "./assets/adaptive-pd.png"

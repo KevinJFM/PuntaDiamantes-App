@@ -14,10 +14,10 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Pide permiso y devuelve el token de push del dispositivo (o null).
+// Pide permiso y devuelve { ok, token, motivo }.
 // OJO: solo funciona en un build real (APK/dev-client), NO en Expo Go.
 export const registrarParaPush = async () => {
-  if (!Device.isDevice) return null; // solo en teléfono físico
+  if (!Device.isDevice) return { ok: false, motivo: 'Debe ser un teléfono real (no emulador)' };
 
   const permisoActual = await Notifications.getPermissionsAsync();
   let estado = permisoActual.status;
@@ -25,7 +25,7 @@ export const registrarParaPush = async () => {
     const solicitado = await Notifications.requestPermissionsAsync();
     estado = solicitado.status;
   }
-  if (estado !== 'granted') return null;
+  if (estado !== 'granted') return { ok: false, motivo: 'Permiso de notificaciones denegado' };
 
   // Canal de Android (necesario para que se muestren)
   if (Platform.OS === 'android') {
@@ -38,14 +38,13 @@ export const registrarParaPush = async () => {
 
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+  if (!projectId) return { ok: false, motivo: 'Falta projectId (EAS) en app.json' };
 
   try {
-    const respuesta = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined
-    );
-    return respuesta.data; // ExponentPushToken[xxxxxxxx]
-  } catch {
-    return null;
+    const respuesta = await Notifications.getExpoPushTokenAsync({ projectId });
+    return { ok: true, token: respuesta.data }; // ExponentPushToken[xxxxxxxx]
+  } catch (e) {
+    return { ok: false, motivo: 'Error al obtener token: ' + (e?.message || String(e)) };
   }
 };
 
