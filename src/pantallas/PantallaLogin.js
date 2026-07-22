@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  Keyboard, ScrollView, ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,8 +24,19 @@ export default function PantallaLogin({ alIniciarSesion }) {
   const [segundos, setSegundos] = useState(0);
   const refCodigo = useRef(null);
   const refScroll = useRef(null);
+  const [alturaTeclado, setAlturaTeclado] = useState(0);
 
   const bajarAlCampo = () => setTimeout(() => refScroll.current?.scrollToEnd({ animated: true }), 120);
+
+  // Sube la tarjeta cuando aparece el teclado (funciona en Expo Go y en el APK)
+  useEffect(() => {
+    const alMostrar = Keyboard.addListener('keyboardDidShow', (e) => {
+      setAlturaTeclado(e.endCoordinates?.height ?? 0);
+      setTimeout(() => refScroll.current?.scrollToEnd({ animated: true }), 60);
+    });
+    const alOcultar = Keyboard.addListener('keyboardDidHide', () => setAlturaTeclado(0));
+    return () => { alMostrar.remove(); alOcultar.remove(); };
+  }, []);
 
   // Cuenta regresiva para reenviar el código
   useEffect(() => {
@@ -90,9 +101,12 @@ export default function PantallaLogin({ alIniciarSesion }) {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView ref={refScroll} contentContainerStyle={estilos.scroll} keyboardShouldPersistTaps="handled">
-        <View style={estilos.tarjeta}>
+    <ScrollView
+      ref={refScroll}
+      contentContainerStyle={[estilos.scroll, { paddingBottom: 24 + alturaTeclado }]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={estilos.tarjeta}>
           <View style={estilos.cajaLogo}>
             <Logo tamano={120} color="#E5388A" />
           </View>
@@ -185,8 +199,7 @@ export default function PantallaLogin({ alIniciarSesion }) {
             </>
           )}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </ScrollView>
   );
 }
 
