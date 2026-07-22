@@ -111,9 +111,11 @@ export default function CampanaNotificaciones() {
       </Pressable>
 
       <Modal visible={abierto} transparent animationType="fade" onRequestClose={() => setAbierto(false)}>
-        <Pressable style={estilos.overlay} onPress={() => setAbierto(false)}>
-          {/* Panel: el onPress vacío evita que se cierre al tocar dentro */}
-          <Pressable style={estilos.panel} onPress={() => {}}>
+        <View style={estilos.overlay}>
+          {/* Fondo para cerrar al tocar afuera (va DETRÁS del panel, no interfiere con el scroll) */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setAbierto(false)} />
+
+          <View style={estilos.panel}>
             <View style={estilos.panelEncabezado}>
               <Text style={estilos.panelTitulo}>Notificaciones</Text>
               <Pressable onPress={() => setAbierto(false)} hitSlop={10}>
@@ -131,7 +133,7 @@ export default function CampanaNotificaciones() {
                 <Text style={estilos.vacio}>Aún no tienes notificaciones.</Text>
               </View>
             ) : (
-              <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ maxHeight: 380 }} nestedScrollEnabled showsVerticalScrollIndicator>
                 {movimientos.map((movimiento) => {
                   const n = aNotificacion(movimiento);
                   return (
@@ -149,8 +151,8 @@ export default function CampanaNotificaciones() {
                 })}
               </ScrollView>
             )}
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </>
   );

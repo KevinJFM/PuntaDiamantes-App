@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -10,15 +11,28 @@ const VERSION = Constants.expoConfig?.version ?? '1.0.0';
 export default function PantallaConfiguracion({ alCerrarSesion }) {
   const { colores, oscuro, alternarTema } = usarTema();
   const estilos = crearEstilos(colores);
+  const [cerrando, setCerrando] = useState(false);
 
   const salir = async () => {
+    setCerrando(true);
+    const inicio = Date.now();
     await borrarToken().catch(() => {}); // limpia el push_token en el backend
     await AsyncStorage.removeItem('portal_token');
-    alCerrarSesion();
+    // Mínimo ~1s para que se note el "Cerrando sesión…"
+    const restante = Math.max(0, 1000 - (Date.now() - inicio));
+    setTimeout(() => alCerrarSesion(), restante);
   };
 
   return (
     <View style={estilos.pantalla}>
+      {/* Capa "Cerrando sesión…" mientras se cierra la sesión */}
+      <Modal transparent visible={cerrando} animationType="fade" statusBarTranslucent>
+        <View style={[estilos.overlayCerrando, { backgroundColor: oscuro ? 'rgba(11,16,32,0.95)' : 'rgba(255,255,255,0.96)' }]}>
+          <ActivityIndicator size="large" color={colores.rosa} />
+          <Text style={estilos.cerrandoTxt}>Cerrando sesión…</Text>
+        </View>
+      </Modal>
+
       <Text style={estilos.titulo}>Configuración</Text>
 
       {/* Modo claro / oscuro */}
@@ -58,6 +72,8 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
 }
 
 const crearEstilos = (c) => StyleSheet.create({
+  overlayCerrando: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  cerrandoTxt: { color: c.texto, fontSize: 16, fontWeight: '700' },
   pantalla: { flex: 1, backgroundColor: c.fondo, padding: 16 },
   titulo: { fontSize: 20, fontWeight: '800', color: c.texto, marginBottom: 16, marginTop: 4 },
 

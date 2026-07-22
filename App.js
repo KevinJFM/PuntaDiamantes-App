@@ -8,6 +8,10 @@ import PantallaLogin from './src/pantallas/PantallaLogin';
 import PantallaBienvenida from './src/pantallas/PantallaBienvenida';
 import PantallaTransicion from './src/pantallas/PantallaTransicion';
 import Navegacion from './src/pantallas/Navegacion';
+import * as SplashScreen from 'expo-splash-screen';
+
+// Mantener el splash (pantalla blanca con el logo) visible hasta ocultarlo a los 3 segundos
+SplashScreen.preventAutoHideAsync();
 
 function Raiz() {
   const { colores, oscuro } = usarTema();
@@ -28,6 +32,12 @@ function Raiz() {
         setBienvenidaVista(!!bienvenida);
       })
       .finally(() => setListo(true));
+  }, []);
+
+  // Oculta el splash (blanco con el logo) a los 3 segundos
+  useEffect(() => {
+    const t = setTimeout(() => { SplashScreen.hideAsync().catch(() => {}); }, 3000);
+    return () => clearTimeout(t);
   }, []);
 
   // Al ingresar (código correcto):

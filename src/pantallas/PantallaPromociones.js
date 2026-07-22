@@ -4,6 +4,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { obtenerPromocionesActivas, mensajeError } from '../servicios/api';
 import { usarTema } from '../tema/tema';
 
+// Convierte 'YYYY-MM-DD' en una fecha local, sin desfase por zona horaria
+const soloFecha = (valor) => {
+  if (!valor) return null;
+  const [y, m, d] = String(valor).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+};
+
+// '25 jul 2026' (o '25 jul' si conAno = false)
+const fmtFecha = (fecha, conAno = true) =>
+  fecha.toLocaleDateString('es-SV', { day: 'numeric', month: 'short', ...(conAno ? { year: 'numeric' } : {}) });
+
+// Texto de vigencia según cómo se configuró la promoción en el sistema
+const textoVigencia = (promo) => {
+  const especial = soloFecha(promo.fecha_especial);
+  if (especial) return `Solo el ${fmtFecha(especial)}`;
+
+  const ini = soloFecha(promo.fecha_inicio);
+  const fin = soloFecha(promo.fecha_fin);
+  if (ini && fin) {
+    const mismoAno = ini.getFullYear() === fin.getFullYear();
+    return `Del ${fmtFecha(ini, !mismoAno)} al ${fmtFecha(fin)}`;
+  }
+  if (fin) return `Hasta el ${fmtFecha(fin)}`;
+  return null;
+};
+
 export default function PantallaPromociones() {
   const { colores } = usarTema();
   const estilos = crearEstilos(colores);
@@ -49,6 +76,10 @@ export default function PantallaPromociones() {
         </View>
       ) : (
         <View style={{ gap: 12 }}>
+          <View style={estilos.avisoBanner}>
+            <Ionicons name="pricetags" size={20} color={colores.rosa} />
+            <Text style={estilos.avisoBannerTxt}>Las promociones se aplican al registrar tu consumo en el hotel.</Text>
+          </View>
           {promociones.map((promocion) => (
             <View key={promocion.id_escenario} style={estilos.tarjeta}>
               <View style={estilos.icono}>
@@ -64,10 +95,15 @@ export default function PantallaPromociones() {
                     <Text style={[estilos.ficha, estilos.fichaDesc]}>{Number(promocion.descuento_extra)}% descuento</Text>
                   )}
                 </View>
+                {textoVigencia(promocion) && (
+                  <View style={estilos.fecha}>
+                    <Ionicons name="calendar-outline" size={13} color={colores.tenue} />
+                    <Text style={estilos.fechaTxt}>{textoVigencia(promocion)}</Text>
+                  </View>
+                )}
               </View>
             </View>
           ))}
-          <Text style={estilos.pie}>Las promociones se aplican al registrar tu consumo en el hotel.</Text>
         </View>
       )}
     </ScrollView>
@@ -85,7 +121,10 @@ const crearEstilos = (c) => StyleSheet.create({
   ficha: { fontSize: 12, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, overflow: 'hidden' },
   fichaPts: { backgroundColor: c.rosa, color: '#fff' },
   fichaDesc: { backgroundColor: c.ficha, color: c.texto },
-  pie: { textAlign: 'center', fontSize: 12, color: c.tenue, marginTop: 6 },
+  fecha: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  fechaTxt: { fontSize: 12.5, color: c.tenue, fontWeight: '600' },
+  avisoBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.ficha, borderRadius: 12, padding: 13, borderLeftWidth: 4, borderLeftColor: c.rosa },
+  avisoBannerTxt: { flex: 1, fontSize: 13.5, fontWeight: '700', color: c.texto },
   aviso: { color: c.tenue, textAlign: 'center', marginTop: 20 },
   cajaVacia: { alignItems: 'center', gap: 12, paddingVertical: 50 },
   vacio: { color: c.tenue, fontSize: 15, textAlign: 'center' },

@@ -14,20 +14,16 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Pide permiso y devuelve { ok, token, motivo }.
+// true si el cliente YA concedió el permiso (no muestra ningún diálogo)
+export const tienePermisoPush = async () => {
+  if (!Device.isDevice) return false;
+  const { status } = await Notifications.getPermissionsAsync();
+  return status === 'granted';
+};
+
+// Obtiene el Expo Push Token (asume permiso ya concedido). Configura el canal en Android.
 // OJO: solo funciona en un build real (APK/dev-client), NO en Expo Go.
-export const registrarParaPush = async () => {
-  if (!Device.isDevice) return { ok: false, motivo: 'Debe ser un teléfono real (no emulador)' };
-
-  const permisoActual = await Notifications.getPermissionsAsync();
-  let estado = permisoActual.status;
-  if (estado !== 'granted') {
-    const solicitado = await Notifications.requestPermissionsAsync();
-    estado = solicitado.status;
-  }
-  if (estado !== 'granted') return { ok: false, motivo: 'Permiso de notificaciones denegado' };
-
-  // Canal de Android (necesario para que se muestren)
+const obtenerToken = async () => {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Notificaciones',
@@ -46,6 +42,27 @@ export const registrarParaPush = async () => {
   } catch (e) {
     return { ok: false, motivo: 'Error al obtener token: ' + (e?.message || String(e)) };
   }
+};
+
+// Muestra el diálogo del sistema (Permitir / No permitir) y, si lo conceden, devuelve el token.
+// Devuelve { ok, token, denegado, motivo }.  Se usa la 1ª vez, al tocar "Activar".
+export const solicitarPermisoPush = async () => {
+  if (!Device.isDevice) return { ok: false, motivo: 'Debe ser un teléfono real (no emulador)' };
+
+  let { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') {
+    ({ status } = await Notifications.requestPermissionsAsync()); // aquí aparece el diálogo del sistema
+  }
+  if (status !== 'granted') return { ok: false, denegado: true };
+
+  return obtenerToken();
+};
+
+// Registra el token SOLO si ya hay permiso, sin mostrar ningún diálogo.
+// Se usa en cada inicio de sesión para refrescar el token en el backend.
+export const registrarTokenSiHayPermiso = async () => {
+  if (!(await tienePermisoPush())) return { ok: false };
+  return obtenerToken();
 };
 
 // Suscribe un callback para cuando el usuario TOCA una notificación (para navegar si se quiere)
