@@ -3,7 +3,8 @@ import { View, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ProveedorTema, usarTema } from './src/tema/tema';
-import { ProveedorAvisos } from './src/componentes/Avisos';
+import { ProveedorAvisos, usarAvisos } from './src/componentes/Avisos';
+import { registrarManejadorSesion } from './src/servicios/api';
 import PantallaLogin from './src/pantallas/PantallaLogin';
 import PantallaBienvenida from './src/pantallas/PantallaBienvenida';
 import PantallaTransicion from './src/pantallas/PantallaTransicion';
@@ -15,6 +16,7 @@ SplashScreen.preventAutoHideAsync();
 
 function Raiz() {
   const { colores, oscuro } = usarTema();
+  const mostrarAviso = usarAvisos();
   const [logueado, setLogueado] = useState(false);
   const [bienvenidaVista, setBienvenidaVista] = useState(true);
   const [mostrarBienvenida, setMostrarBienvenida] = useState(false); // 1ª vez: pantalla con "Continuar"
@@ -39,6 +41,16 @@ function Raiz() {
     const t = setTimeout(() => { SplashScreen.hideAsync().catch(() => {}); }, 3000);
     return () => clearTimeout(t);
   }, []);
+
+  // Cuando el token expira (sesión de 1 año) o deja de servir: cerrar sesión y avisar,
+  // para que el cliente sepa que debe ingresar de nuevo (en vez de ver errores).
+  useEffect(() => {
+    registrarManejadorSesion(async () => {
+      await AsyncStorage.removeItem('portal_token');
+      setLogueado(false);
+      mostrarAviso('info', 'Tu sesión expiró', 'Por tu seguridad, vuelve a iniciar sesión.');
+    });
+  }, [mostrarAviso]);
 
   // Al ingresar (código correcto):
   //  - Primera vez de todas -> pantalla "Te damos la bienvenida" con botón Continuar

@@ -1,22 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { borrarToken } from '../servicios/api';
+import { usarAvisos } from '../componentes/Avisos';
 import { usarTema } from '../tema/tema';
 
 const VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export default function PantallaConfiguracion({ alCerrarSesion }) {
   const { colores, oscuro, alternarTema } = usarTema();
+  const mostrarAviso = usarAvisos();
   const estilos = crearEstilos(colores);
   const [cerrando, setCerrando] = useState(false);
+  const [enLinea, setEnLinea] = useState(true);
+
+  // Vigila la conexión en vivo: si no hay internet, se deshabilita el botón de cerrar sesión.
+  useEffect(() => {
+    const quitar = NetInfo.addEventListener((estado) => {
+      setEnLinea(estado.isConnected !== false); // false solo cuando de verdad no hay red
+    });
+    return () => quitar();
+  }, []);
 
   const salir = async () => {
     setCerrando(true);
     const inicio = Date.now();
-    await borrarToken().catch(() => {}); // limpia el push_token en el backend
+    // Cerrar sesión requiere internet: para volver a entrar se necesita un código nuevo.
+    // Usamos borrarToken para, de paso, confirmar que hay conexión con el servidor.
+    try {
+      await borrarToken(); // limpia el push_token en el backend
+    } catch (e) {
+      if (!e?.response) {
+        // Sin respuesta del servidor = sin internet → no cerramos sesión
+        setCerrando(false);
+        return mostrarAviso(
+          'error',
+          'Sin conexión',
+          'Necesitas internet para cerrar sesión, porque deberás ingresar de nuevo con un código.'
+        );
+      }
+      // Hubo respuesta (p. ej. la sesión ya venció): el servidor está accesible, seguimos.
+    }
     await AsyncStorage.removeItem('portal_token');
     // Mínimo ~1s para que se note el "Cerrando sesión…"
     const restante = Math.max(0, 1000 - (Date.now() - inicio));
@@ -58,10 +85,17 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
         <Text style={estilos.salirInfo1}>Presiona el botón</Text>
         <Text style={estilos.salirInfo2}>Deberás ingresar tus datos de nuevo</Text>
       </View>
-      <Pressable style={estilos.btnSalir} onPress={salir}>
-        <Ionicons name="log-out-outline" size={20} color="#fff" />
-        <Text style={estilos.btnSalirTxt}>Cerrar sesión</Text>
+      <Pressable
+        style={[estilos.btnSalir, !enLinea && estilos.btnSalirDeshab]}
+        onPress={salir}
+        disabled={!enLinea}
+      >
+        <Ionicons name="log-out-outline" size={20} color={enLinea ? '#fff' : colores.tenue} />
+        <Text style={[estilos.btnSalirTxt, !enLinea && { color: colores.tenue }]}>Cerrar sesión</Text>
       </Pressable>
+      {!enLinea && (
+        <Text style={estilos.salirOffline}>Sin conexión: necesitas internet para cerrar sesión.</Text>
+      )}
 
       <View style={estilos.cajaPie}>
         <Text style={estilos.pie}>Punta Diamantes · Fidelización de Clientes</Text>
@@ -92,7 +126,9 @@ const crearEstilos = (c) => StyleSheet.create({
   salirInfo1: { fontSize: 14, fontWeight: '700', color: c.texto },
   salirInfo2: { fontSize: 12, color: c.tenue, marginTop: 2 },
   btnSalir: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: c.rosa, borderRadius: 14, paddingVertical: 15 },
+  btnSalirDeshab: { backgroundColor: c.ficha },
   btnSalirTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  salirOffline: { textAlign: 'center', fontSize: 12.5, color: c.tenue, marginTop: 10 },
 
   cajaPie: { marginTop: 'auto', paddingBottom: 8 },
   pie: { textAlign: 'center', fontSize: 12, color: c.tenue },

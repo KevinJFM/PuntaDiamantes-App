@@ -16,6 +16,26 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// ===== Sesión expirada (401) =====
+// La app registra aquí qué hacer cuando el token ya no sirve (cerrar sesión + avisar).
+// El acceso (pedir/verificar código) queda excluido: ahí un 401 es "código incorrecto".
+let alExpirarSesion = null;
+export const registrarManejadorSesion = (fn) => { alExpirarSesion = fn; };
+
+const RUTAS_ACCESO = ['/portal/solicitar-codigo', '/portal/verificar-codigo'];
+
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    const url = error.config?.url || '';
+    const esAcceso = RUTAS_ACCESO.some((r) => url.includes(r));
+    if (error.response?.status === 401 && !esAcceso) {
+      alExpirarSesion?.();
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
 
 // ---------- Servicios del portal ----------
@@ -60,5 +80,5 @@ export const borrarToken = async () => {
 // Mensaje amigable: distingue "sin conexión" de error del servidor
 export const mensajeError = (error, respaldo = 'Ocurrió un error') => {
   if (error?.response) return error.response.data?.message || respaldo;
-  return 'No se pudo conectar. Revisa tu conexión y la IP del servidor.';
+  return 'No se pudo conectar. Revisa tu conexión a internet.';
 };
