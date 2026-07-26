@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon-pd.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puntadiamantes.app"
@@ -44,7 +44,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

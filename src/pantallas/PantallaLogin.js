@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, Pressable, StyleSheet,
   Keyboard, ScrollView, ActivityIndicator,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../componentes/Logo';
 import { usarAvisos } from '../componentes/Avisos';
@@ -86,7 +86,7 @@ export default function PantallaLogin({ alIniciarSesion }) {
     setCargando(true);
     try {
       const r = await verificarCodigo({ tipo_documento: tipo, numero_documento: numero.trim(), codigo });
-      await AsyncStorage.setItem('portal_token', r.token);
+      await SecureStore.setItemAsync('portal_token', r.token);
 
       // En segundo plano y sin diálogos: si el cliente ya dio permiso, refresca su token.
       // (La 1ª vez el permiso se pide tras "Continuar" en la pantalla de bienvenida.)

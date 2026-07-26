@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { Appearance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Acento de marca (constante en ambos temas)
@@ -49,7 +50,12 @@ export function ProveedorTema({ children }) {
 
   useEffect(() => {
     AsyncStorage.getItem('portal_tema')
-      .then((v) => setOscuro(v === 'oscuro'))
+      .then((v) => {
+        // Si el cliente ya eligió un tema, se respeta. La primera vez sigue el tema del teléfono.
+        if (v === 'oscuro') setOscuro(true);
+        else if (v === 'claro') setOscuro(false);
+        else setOscuro(Appearance.getColorScheme() === 'dark');
+      })
       .finally(() => setListo(true));
   }, []);
 

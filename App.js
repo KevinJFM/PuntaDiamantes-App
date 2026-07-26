@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, StatusBar } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { ProveedorTema, usarTema } from './src/tema/tema';
 import { ProveedorAvisos, usarAvisos } from './src/componentes/Avisos';
 import { registrarManejadorSesion } from './src/servicios/api';
@@ -28,8 +29,8 @@ function Raiz() {
   // Al abrir la app, revisa el token y si ya pasó la bienvenida inicial alguna vez
   useEffect(() => {
     Promise.all([
-      AsyncStorage.getItem('portal_token'),
-      AsyncStorage.getItem('bienvenida_vista'),
+      SecureStore.getItemAsync('portal_token'),   // el token vive cifrado en SecureStore
+      AsyncStorage.getItem('bienvenida_vista'),    // no sensible: sigue en AsyncStorage
     ])
       .then(([token, bienvenida]) => {
         setLogueado(!!token);
@@ -50,10 +51,15 @@ function Raiz() {
   // Cuando el token expira (sesión de 1 año) o deja de servir: cerrar sesión y avisar,
   // para que el cliente sepa que debe ingresar de nuevo (en vez de ver errores).
   useEffect(() => {
-    registrarManejadorSesion(async () => {
-      await AsyncStorage.removeItem('portal_token');
+    registrarManejadorSesion((mensaje) => {
+      // El token ya se borró en el interceptor (SecureStore). Aquí solo avisamos.
       setLogueado(false);
-      mostrarAviso('info', 'Tu sesión expiró', 'Por tu seguridad, vuelve a iniciar sesión.');
+      const otroDispositivo = mensaje?.includes('dispositivo');
+      mostrarAviso(
+        'info',
+        otroDispositivo ? 'Sesión cerrada' : 'Tu sesión expiró',
+        otroDispositivo ? mensaje : 'Por tu seguridad, vuelve a iniciar sesión.'
+      );
     });
   }, [mostrarAviso]);
 

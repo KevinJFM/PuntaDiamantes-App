@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { borrarToken } from '../servicios/api';
+import { borrarToken, cerrarSesionPortal } from '../servicios/api';
 import { usarAvisos } from '../componentes/Avisos';
 import { usarTema } from '../tema/tema';
 
@@ -15,6 +15,7 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
   const mostrarAviso = usarAvisos();
   const estilos = crearEstilos(colores);
   const [cerrando, setCerrando] = useState(false);
+  const [cerrandoPortal, setCerrandoPortal] = useState(false);
   const [enLinea, setEnLinea] = useState(true);
 
   // Vigila la conexión en vivo: si no hay internet, se deshabilita el botón de cerrar sesión.
@@ -24,6 +25,23 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
     });
     return () => quitar();
   }, []);
+
+  // Cierra de forma remota la sesión del PORTAL web (por si la dejaste abierta en otra compu)
+  const cerrarPortal = async () => {
+    setCerrandoPortal(true);
+    try {
+      const r = await cerrarSesionPortal();
+      mostrarAviso('info', r.cerrada ? 'Sesión del portal cerrada' : 'Sin sesión del portal', r.message);
+    } catch (e) {
+      mostrarAviso(
+        'error',
+        'No se pudo',
+        e?.response ? (e.response.data?.message || 'Inténtalo de nuevo.') : 'Necesitas internet para hacer esto.'
+      );
+    } finally {
+      setCerrandoPortal(false);
+    }
+  };
 
   const salir = async () => {
     setCerrando(true);
@@ -44,7 +62,7 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
       }
       // Hubo respuesta (p. ej. la sesión ya venció): el servidor está accesible, seguimos.
     }
-    await AsyncStorage.removeItem('portal_token');
+    await SecureStore.deleteItemAsync('portal_token');
     // Mínimo ~1s para que se note el "Cerrando sesión…"
     const restante = Math.max(0, 1000 - (Date.now() - inicio));
     setTimeout(() => alCerrarSesion(), restante);
@@ -78,6 +96,29 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
           </Pressable>
         </View>
         <Text style={estilos.ayuda}>Cambia entre tema claro y oscuro.</Text>
+      </View>
+
+      {/* Seguridad: cerrar la sesión del portal web de forma remota */}
+      <View style={estilos.tarjeta}>
+        <View style={estilos.filaIzq}>
+          <Ionicons name="shield-checkmark-outline" size={22} color={colores.rosa} />
+          <Text style={estilos.filaTxt}>Seguridad</Text>
+        </View>
+        <Text style={estilos.ayuda}>
+          ¿Dejaste el portal web abierto en otra computadora? Ciérralo desde aquí.
+        </Text>
+        <Pressable
+          style={[estilos.btnPortal, !enLinea && estilos.btnPortalDeshab]}
+          onPress={cerrarPortal}
+          disabled={!enLinea || cerrandoPortal}
+        >
+          {cerrandoPortal
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Ionicons name="desktop-outline" size={18} color={enLinea ? '#fff' : colores.tenue} />}
+          <Text style={[estilos.btnPortalTxt, !enLinea && { color: colores.tenue }]}>
+            Cerrar sesión del portal
+          </Text>
+        </Pressable>
       </View>
 
       {/* Cerrar sesión */}
@@ -121,6 +162,10 @@ const crearEstilos = (c) => StyleSheet.create({
   interruptorEncendido: { backgroundColor: c.azul },
   perilla: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   perillaEncendida: { alignSelf: 'flex-end' },
+
+  btnPortal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, backgroundColor: c.rosa, borderRadius: 14, paddingVertical: 15 },
+  btnPortalDeshab: { backgroundColor: c.ficha },
+  btnPortalTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
   salirInfo: { alignItems: 'center', marginBottom: 10 },
   salirInfo1: { fontSize: 14, fontWeight: '700', color: c.texto },

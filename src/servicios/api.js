@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { URL_API } from '../configuracion/configuracion';
 
 const api = axios.create({
@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Adjunta el token del cliente (guardado en el teléfono) a cada petición
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('portal_token');
+  const token = await SecureStore.getItemAsync('portal_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,11 +26,14 @@ const RUTAS_ACCESO = ['/portal/solicitar-codigo', '/portal/verificar-codigo'];
 
 api.interceptors.response.use(
   (res) => res,
-  (error) => {
+  async (error) => {
     const url = error.config?.url || '';
     const esAcceso = RUTAS_ACCESO.some((r) => url.includes(r));
     if (error.response?.status === 401 && !esAcceso) {
-      alExpirarSesion?.();
+      // Borramos el token de una vez (aunque no toque "Continuar"): al reabrir irá al login.
+      try { await SecureStore.deleteItemAsync('portal_token'); } catch { /* ignorar */ }
+      // El backend puede mandar un mensaje específico (ej. "iniciaste sesión en otro dispositivo").
+      alExpirarSesion?.(error.response?.data?.message);
     }
     return Promise.reject(error);
   }
@@ -46,7 +49,14 @@ export const solicitarCodigo = async (datos) => {
 };
 
 export const verificarCodigo = async (datos) => {
-  const { data } = await api.post('/portal/verificar-codigo', datos);
+  // origen 'app': la sesión se guarda en la ranura de la app (independiente del portal)
+  const { data } = await api.post('/portal/verificar-codigo', { ...datos, origen: 'app' });
+  return data;
+};
+
+// Cierra de forma remota la sesión del PORTAL (para usar desde la app)
+export const cerrarSesionPortal = async () => {
+  const { data } = await api.post('/portal/cerrar-sesion-remota', { objetivo: 'portal' });
   return data;
 };
 
