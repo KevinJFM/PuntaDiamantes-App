@@ -16,9 +16,7 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ===== Sesión expirada (401) =====
-// La app registra aquí qué hacer cuando el token ya no sirve (cerrar sesión + avisar).
-// El acceso (pedir/verificar código) queda excluido: ahí un 401 es "código incorrecto".
+// Sesión expirada (401): registra qué hacer cuando el token ya no sirve (cerrar sesión + avisar). Se excluye el acceso, donde un 401 es "código incorrecto".
 let alExpirarSesion = null;
 export const registrarManejadorSesion = (fn) => { alExpirarSesion = fn; };
 

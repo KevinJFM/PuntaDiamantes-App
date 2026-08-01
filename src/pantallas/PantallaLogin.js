@@ -88,8 +88,7 @@ export default function PantallaLogin({ alIniciarSesion }) {
       const r = await verificarCodigo({ tipo_documento: tipo, numero_documento: numero.trim(), codigo });
       await SecureStore.setItemAsync('portal_token', r.token);
 
-      // En segundo plano y sin diálogos: si el cliente ya dio permiso, refresca su token.
-      // (La 1ª vez el permiso se pide tras "Continuar" en la pantalla de bienvenida.)
+      // En segundo plano, si ya hay permiso, refresca el token (la 1ª vez el permiso se pide tras "Continuar" en la bienvenida).
       registrarTokenSiHayPermiso().then((push) => {
         if (push.ok && push.token) registrarToken(push.token).catch(() => {});
       });

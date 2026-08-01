@@ -1,25 +1,25 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import * as SecureStore from 'expo-secure-store';
-import PantallaLogin from './PantallaLogin';
-import { solicitarCodigo, verificarCodigo } from '../servicios/api';
+import PantallaLogin from '../src/pantallas/PantallaLogin';
+import { solicitarCodigo, verificarCodigo } from '../src/servicios/api';
 
 // Aviso compartido: un mismo jest.fn que devuelve usarAvisos()
 const mockMostrarAviso = jest.fn();
-jest.mock('../componentes/Avisos', () => ({
+jest.mock('../src/componentes/Avisos', () => ({
   usarAvisos: () => mockMostrarAviso,
 }));
 
 // El logo usa SVG; no aporta a la lógica de la pantalla.
-jest.mock('../componentes/Logo', () => () => null);
+jest.mock('../src/componentes/Logo', () => () => null);
 
-jest.mock('../servicios/api', () => ({
+jest.mock('../src/servicios/api', () => ({
   solicitarCodigo: jest.fn(),
   verificarCodigo: jest.fn(),
   registrarToken: jest.fn(),
   mensajeError: (_e, respaldo) => respaldo,
 }));
 
-jest.mock('../servicios/notificaciones', () => ({
+jest.mock('../src/servicios/notificaciones', () => ({
   registrarTokenSiHayPermiso: jest.fn(async () => ({ ok: false })),
 }));
 

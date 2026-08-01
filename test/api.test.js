@@ -17,7 +17,7 @@ jest.mock('axios', () => {
 
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { mensajeError, registrarManejadorSesion } from './api';
+import { mensajeError, registrarManejadorSesion } from '../src/servicios/api';
 
 const instancia = axios.__instance;
 

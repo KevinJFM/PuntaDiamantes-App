@@ -1,9 +1,9 @@
 import { render, fireEvent } from '@testing-library/react-native';
-import { ProveedorTema } from '../tema/tema';
-import PantallaMisPuntos from './PantallaMisPuntos';
-import { obtenerMisPuntos, obtenerMisMovimientos } from '../servicios/api';
+import { ProveedorTema } from '../src/tema/tema';
+import PantallaMisPuntos from '../src/pantallas/PantallaMisPuntos';
+import { obtenerMisPuntos, obtenerMisMovimientos } from '../src/servicios/api';
 
-jest.mock('../servicios/api', () => ({
+jest.mock('../src/servicios/api', () => ({
   obtenerMisPuntos: jest.fn(),
   obtenerMisMovimientos: jest.fn(),
   mensajeError: (_e, respaldo) => respaldo,

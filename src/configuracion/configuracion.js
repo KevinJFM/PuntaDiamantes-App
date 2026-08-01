@@ -1,12 +1,4 @@
-// ============================================================
-//  Configuración de la API
-//  IMPORTANTE: la app corre en tu TELÉFONO, así que "localhost"
-//  NO sirve (apunta al propio teléfono). Debe apuntar a la IP de
-//  la PC donde corre el backend, en la misma red WiFi.
-//
-//  La IP va en URL_API (línea de abajo). Si tu PC cambia de IP,
-//  actualízala ahí: ejecuta `ipconfig` y usa la IPv4 de tu red.
-//  En producción se reemplaza por el dominio real HTTPS.
-// ============================================================
-export const URL_API = 'http://192.168.1.2:4000/api';
+// Config de la API. La app corre en el teléfono: URL_API debe apuntar a la IP de la PC del backend (misma WiFi), no a localhost.
+// Si la PC cambia de IP, actualízala aquí (`ipconfig`, IPv4). En producción se usa el dominio HTTPS real.
+export const URL_API = 'http://192.168.1.3:4000/api';
 

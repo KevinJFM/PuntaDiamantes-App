@@ -46,8 +46,7 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
   const salir = async () => {
     setCerrando(true);
     const inicio = Date.now();
-    // Cerrar sesión requiere internet: para volver a entrar se necesita un código nuevo.
-    // Usamos borrarToken para, de paso, confirmar que hay conexión con el servidor.
+    // Cerrar sesión requiere internet (reingresar pide código nuevo); borrarToken confirma de paso que hay conexión.
     try {
       await borrarToken(); // limpia el push_token en el backend
     } catch (e) {

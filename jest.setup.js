@@ -1,10 +1,7 @@
-// React 19 exige este flag para que act(...) (y los flush de estado en las
-// pruebas) funcionen bajo Jest.
+// React 19 exige este flag para que act(...) funcione bajo Jest.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-// Mocks de los módulos nativos de Expo que no corren en Node (jest).
-// Se registran para TODAS las pruebas; cada test puede sobreescribir el
-// valor de retorno con mockResolvedValueOnce / mockReturnValueOnce.
+// Mocks de módulos nativos de Expo que no corren en Node; cada test puede sobreescribir el retorno con mock*Once.
 
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(async () => null),
@@ -12,8 +9,7 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(async () => {}),
 }));
 
-// __esModule: true evita que interopRequireWildcard copie el namespace,
-// para que Device.isDevice sea el MISMO objeto en el test y en el código.
+// __esModule: true evita que se copie el namespace, para que Device.isDevice sea el mismo objeto en test y código.
 jest.mock('expo-device', () => ({
   __esModule: true,
   isDevice: true,
@@ -29,8 +25,7 @@ jest.mock('expo-notifications', () => ({
   AndroidImportance: { MAX: 5 },
 }));
 
-// Los íconos arrastran expo-font/expo-asset (nativos); los sustituimos por un
-// componente trivial. Cualquier familia (Ionicons, MaterialIcons, …) sirve.
+// Los íconos arrastran expo-font/expo-asset (nativos); se sustituyen por un componente trivial para cualquier familia.
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');

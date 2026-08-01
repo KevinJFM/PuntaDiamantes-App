@@ -71,8 +71,7 @@ export default function CampanaNotificaciones() {
     cargar();
   }, [cargar]);
 
-  // Refresca solo al volver a la app (primer plano), sin recargar ni cerrar sesión:
-  // así un movimiento recién hecho aparece cuando el cliente vuelve a mirar su teléfono.
+  // Refresca al volver a primer plano, para que un movimiento reciente aparezca cuando el cliente vuelve a mirar el teléfono.
   const estadoApp = useRef(AppState.currentState);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (siguiente) => {

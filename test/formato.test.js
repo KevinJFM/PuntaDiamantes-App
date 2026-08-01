@@ -4,7 +4,7 @@ import {
   formatearDocumento,
   esDuiValido,
   esPasaporteValido,
-} from './formato';
+} from '../src/utilidades/formato';
 
 describe('formatearDui', () => {
   it('inserta el guion tras 8 dígitos', () => {

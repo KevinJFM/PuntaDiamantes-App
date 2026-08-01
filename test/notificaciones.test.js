@@ -4,7 +4,7 @@ import {
   tienePermisoPush,
   solicitarPermisoPush,
   registrarTokenSiHayPermiso,
-} from './notificaciones';
+} from '../src/servicios/notificaciones';
 
 beforeEach(() => {
   jest.clearAllMocks();

@@ -39,17 +39,14 @@ function Raiz() {
       .finally(() => setListo(true));
   }, []);
 
-  // Pantalla blanca con el logo por 3 segundos (también en la 1ª instalación).
-  // Ocultamos el splash NATIVO enseguida y pintamos el logo desde React, porque
-  // en algunos primeros arranques el nativo alcanza a mostrar el blanco pero no el logo.
+  // Splash blanco con el logo por 3 seg: ocultamos el splash nativo enseguida y pintamos el logo desde React (en algunos arranques el nativo no alcanza a mostrarlo).
   useEffect(() => {
     SplashScreen.hideAsync().catch(() => {});
     const t = setTimeout(() => setSplashActivo(false), 3000);
     return () => clearTimeout(t);
   }, []);
 
-  // Cuando el token expira (sesión de 1 año) o deja de servir: cerrar sesión y avisar,
-  // para que el cliente sepa que debe ingresar de nuevo (en vez de ver errores).
+  // Cuando el token expira o deja de servir: cerrar sesión y avisar para que el cliente reingrese (en vez de ver errores).
   useEffect(() => {
     registrarManejadorSesion((mensaje) => {
       // El token ya se borró en el interceptor (SecureStore). Aquí solo avisamos.
@@ -63,9 +60,7 @@ function Raiz() {
     });
   }, [mostrarAviso]);
 
-  // Al ingresar (código correcto):
-  //  - Primera vez de todas -> pantalla "Te damos la bienvenida" con botón Continuar
-  //  - Siguientes veces      -> transición "¡Bienvenido!" ~2 seg
+  // Al ingresar: la primera vez muestra la pantalla "Te damos la bienvenida" (botón Continuar); las siguientes, una transición "¡Bienvenido!" de ~2 seg.
   const manejarIngreso = () => {
     setLogueado(true);
     if (!bienvenidaVista) {

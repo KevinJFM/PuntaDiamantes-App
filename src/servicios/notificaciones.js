@@ -21,8 +21,7 @@ export const tienePermisoPush = async () => {
   return status === 'granted';
 };
 
-// Obtiene el Expo Push Token (asume permiso ya concedido). Configura el canal en Android.
-// OJO: solo funciona en un build real (APK/dev-client), NO en Expo Go.
+// Obtiene el Expo Push Token (asume permiso concedido) y configura el canal en Android. Solo funciona en build real (APK/dev-client), no en Expo Go.
 const obtenerToken = async () => {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -44,8 +43,7 @@ const obtenerToken = async () => {
   }
 };
 
-// Muestra el diálogo del sistema (Permitir / No permitir) y, si lo conceden, devuelve el token.
-// Devuelve { ok, token, denegado, motivo }.  Se usa la 1ª vez, al tocar "Activar".
+// Muestra el diálogo del sistema y, si conceden, devuelve el token. Devuelve { ok, token, denegado, motivo }; se usa la 1ª vez al tocar "Activar".
 export const solicitarPermisoPush = async () => {
   if (!Device.isDevice) return { ok: false, motivo: 'Debe ser un teléfono real (no emulador)' };
 
@@ -58,8 +56,7 @@ export const solicitarPermisoPush = async () => {
   return obtenerToken();
 };
 
-// Registra el token SOLO si ya hay permiso, sin mostrar ningún diálogo.
-// Se usa en cada inicio de sesión para refrescar el token en el backend.
+// Registra el token solo si ya hay permiso (sin diálogo); se usa en cada login para refrescarlo en el backend.
 export const registrarTokenSiHayPermiso = async () => {
   if (!(await tienePermisoPush())) return { ok: false };
   return obtenerToken();
