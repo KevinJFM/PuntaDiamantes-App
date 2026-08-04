@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator, Linking } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { borrarToken, cerrarSesionPortal } from '../servicios/api';
+import { borrarToken, cerrarSesionPortal, registrarToken } from '../servicios/api';
+import { solicitarPermisoPush, tienePermisoPush, pushDesactivadoPorUsuario, marcarPushDesactivado } from '../servicios/notificaciones';
 import { usarAvisos } from '../componentes/Avisos';
 import { usarTema } from '../tema/tema';
 
@@ -17,6 +18,8 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
   const [cerrando, setCerrando] = useState(false);
   const [cerrandoPortal, setCerrandoPortal] = useState(false);
   const [enLinea, setEnLinea] = useState(true);
+  const [notifActivas, setNotifActivas] = useState(false);
+  const [cargandoNotif, setCargandoNotif] = useState(true); // true al inicio mientras se consulta el permiso
 
   // Vigila la conexión en vivo: si no hay internet, se deshabilita el botón de cerrar sesión.
   useEffect(() => {
@@ -25,6 +28,45 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
     });
     return () => quitar();
   }, []);
+
+  // Estado inicial del interruptor: activo solo si hay permiso del sistema Y el cliente no lo apagó a mano.
+  useEffect(() => {
+    (async () => {
+      const [permiso, apagado] = await Promise.all([tienePermisoPush(), pushDesactivadoPorUsuario()]);
+      setNotifActivas(permiso && !apagado);
+      setCargandoNotif(false);
+    })();
+  }, []);
+
+  // Enciende o apaga las notificaciones desde la app (sin tener que cerrar sesión).
+  const alternarNotif = async () => {
+    setCargandoNotif(true);
+    try {
+      if (notifActivas) {
+        // Apagar: recordamos la preferencia y borramos el token en el backend para que dejen de enviarse.
+        await marcarPushDesactivado(true);
+        try { await borrarToken(); } catch { /* sin internet: al menos la preferencia local ya evita el reenvío */ }
+        setNotifActivas(false);
+        mostrarAviso('info', 'Notificaciones desactivadas', 'Ya no recibirás avisos en este teléfono. Puedes volver a activarlas cuando quieras.');
+      } else {
+        // Encender: pedimos el permiso (si hace falta) y registramos el token.
+        const push = await solicitarPermisoPush();
+        if (push.ok && push.token) {
+          try { await registrarToken(push.token); } catch { /* se reintenta al abrir la app / iniciar sesión */ }
+          setNotifActivas(true);
+          mostrarAviso('exito', 'Notificaciones activadas', 'Te avisaremos de nuevas promociones y cada vez que ganes o canjees puntos.');
+        } else if (push.denegado) {
+          // El permiso está bloqueado a nivel del sistema: el diálogo ya no aparece, hay que abrirlo en Ajustes.
+          mostrarAviso('info', 'Actívalas en Ajustes', 'El permiso está bloqueado en el teléfono. Ábrelo en Ajustes › Aplicaciones › Punta Diamantes › Notificaciones.');
+          Linking.openSettings().catch(() => {});
+        } else {
+          mostrarAviso('error', 'No disponible', push.motivo || 'Las notificaciones solo funcionan en un teléfono real con la app instalada.');
+        }
+      }
+    } finally {
+      setCargandoNotif(false);
+    }
+  };
 
   // Cierra de forma remota la sesión del PORTAL web (por si la dejaste abierta en otra compu)
   const cerrarPortal = async () => {
@@ -97,6 +139,33 @@ export default function PantallaConfiguracion({ alCerrarSesion }) {
         <Text style={estilos.ayuda}>Cambia entre tema claro y oscuro.</Text>
       </View>
 
+      {/* Notificaciones: activar/desactivar los avisos push sin cerrar sesión */}
+      <View style={estilos.tarjeta}>
+        <View style={estilos.fila}>
+          <View style={estilos.filaIzq}>
+            <Ionicons name={notifActivas ? 'notifications' : 'notifications-off'} size={22} color={colores.rosa} />
+            <Text style={estilos.filaTxt}>Notificaciones</Text>
+          </View>
+
+          {cargandoNotif ? (
+            <ActivityIndicator size="small" color={colores.rosa} style={estilos.notifCargando} />
+          ) : (
+            <Pressable onPress={alternarNotif} style={[estilos.interruptor, notifActivas && estilos.interruptorEncendido]}>
+              <View style={[estilos.perilla, notifActivas && estilos.perillaEncendida]}>
+                <Ionicons
+                  name={notifActivas ? 'notifications' : 'notifications-off'}
+                  size={14}
+                  color={notifActivas ? colores.azul : colores.tenue}
+                />
+              </View>
+            </Pressable>
+          )}
+        </View>
+        <Text style={estilos.ayuda}>
+          Recibe avisos de nuevas promociones y cada vez que ganes o canjees puntos.
+        </Text>
+      </View>
+
       {/* Seguridad: cerrar la sesión del portal web de forma remota */}
       <View style={estilos.tarjeta}>
         <View style={estilos.filaIzq}>
@@ -161,6 +230,7 @@ const crearEstilos = (c) => StyleSheet.create({
   interruptorEncendido: { backgroundColor: c.azul },
   perilla: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   perillaEncendida: { alignSelf: 'flex-end' },
+  notifCargando: { width: 56, alignItems: 'center' },
 
   btnPortal: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12, backgroundColor: c.rosa, borderRadius: 14, paddingVertical: 15 },
   btnPortalDeshab: { backgroundColor: c.ficha },

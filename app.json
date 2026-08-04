@@ -45,13 +45,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "7db55005-75dd-476a-9cf5-9c12b82cfcf8"
+        "projectId": "1c023db4-6648-480f-8642-6b6de62d1290"
       }
     },
-    "owner": "kevinjavier"
+    "owner": "puntadiamantes"
   }
 }

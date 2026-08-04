@@ -2,6 +2,19 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Preferencia local: el cliente apagó las notificaciones a mano desde Configuración.
+// Sirve para que el registro automático (al abrir la app / al entrar) NO las vuelva a prender solo.
+const CLAVE_DESACTIVADO = 'push_desactivado';
+
+export const pushDesactivadoPorUsuario = async () =>
+  (await AsyncStorage.getItem(CLAVE_DESACTIVADO)) === '1';
+
+export const marcarPushDesactivado = (desactivado) =>
+  desactivado
+    ? AsyncStorage.setItem(CLAVE_DESACTIVADO, '1')
+    : AsyncStorage.removeItem(CLAVE_DESACTIVADO);
 
 // Cómo se muestran las notificaciones cuando la app está ABIERTA
 Notifications.setNotificationHandler({
@@ -53,11 +66,15 @@ export const solicitarPermisoPush = async () => {
   }
   if (status !== 'granted') return { ok: false, denegado: true };
 
+  // Conceder el permiso es un "sí" explícito: limpia cualquier apagado manual previo.
+  await marcarPushDesactivado(false);
   return obtenerToken();
 };
 
-// Registra el token solo si ya hay permiso (sin diálogo); se usa en cada login para refrescarlo en el backend.
+// Registra el token solo si ya hay permiso y el cliente no lo apagó a mano (sin diálogo);
+// se usa al abrir la app y en cada login para refrescarlo en el backend.
 export const registrarTokenSiHayPermiso = async () => {
+  if (await pushDesactivadoPorUsuario()) return { ok: false };
   if (!(await tienePermisoPush())) return { ok: false };
   return obtenerToken();
 };

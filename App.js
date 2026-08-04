@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
-import { View, StatusBar } from 'react-native';
+import { View, StatusBar, Image } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { ProveedorTema, usarTema } from './src/tema/tema';
 import { ProveedorAvisos, usarAvisos } from './src/componentes/Avisos';
-import { registrarManejadorSesion } from './src/servicios/api';
+import { registrarManejadorSesion, registrarToken } from './src/servicios/api';
+import { registrarTokenSiHayPermiso } from './src/servicios/notificaciones';
 import PantallaLogin from './src/pantallas/PantallaLogin';
 import PantallaBienvenida from './src/pantallas/PantallaBienvenida';
 import PantallaTransicion from './src/pantallas/PantallaTransicion';
 import Navegacion from './src/pantallas/Navegacion';
-import Logo from './src/componentes/Logo';
 import * as SplashScreen from 'expo-splash-screen';
 
 // Mantener el splash (pantalla blanca con el logo) visible hasta ocultarlo a los 3 segundos
@@ -26,24 +26,35 @@ function Raiz() {
   const [listo, setListo] = useState(false);
   const [splashActivo, setSplashActivo] = useState(true);            // pantalla blanca con el logo (3 seg)
 
-  // Al abrir la app, revisa el token y si ya pasó la bienvenida inicial alguna vez
+  // Al abrir la app: revisa el token, si ya pasó la bienvenida inicial y si ya se mostró el splash del logo alguna vez.
   useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {}); // ocultamos el splash nativo enseguida y pintamos el logo desde React
     Promise.all([
       SecureStore.getItemAsync('portal_token'),   // el token vive cifrado en SecureStore
       AsyncStorage.getItem('bienvenida_vista'),    // no sensible: sigue en AsyncStorage
+      AsyncStorage.getItem('splash_visto'),        // para mostrar el logo solo la 1ª vez tras instalar
     ])
-      .then(([token, bienvenida]) => {
+      .then(([token, bienvenida, splashVisto]) => {
         setLogueado(!!token);
         setBienvenidaVista(!!bienvenida);
+        // Si ya hay sesión y el permiso sigue concedido, refresca el token en el backend al abrir la app
+        // (no solo al iniciar sesión). Así, si el cliente activó el permiso en los ajustes del teléfono,
+        // la próxima vez que abra la app ya vuelve a recibir notificaciones sin tener que cerrar sesión.
+        if (token) {
+          registrarTokenSiHayPermiso().then((push) => {
+            if (push.ok && push.token) registrarToken(push.token).catch(() => {});
+          });
+        }
+        // El splash con el logo (~3 seg) se muestra SOLO la primera vez que se abre la app tras instalar.
+        // Las siguientes veces se salta: solo se ve el instante que tarda en leerse el token.
+        if (splashVisto) {
+          setSplashActivo(false);
+        } else {
+          AsyncStorage.setItem('splash_visto', '1');
+          setTimeout(() => setSplashActivo(false), 3000);
+        }
       })
       .finally(() => setListo(true));
-  }, []);
-
-  // Splash blanco con el logo por 3 seg: ocultamos el splash nativo enseguida y pintamos el logo desde React (en algunos arranques el nativo no alcanza a mostrarlo).
-  useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
-    const t = setTimeout(() => setSplashActivo(false), 3000);
-    return () => clearTimeout(t);
   }, []);
 
   // Cuando el token expira o deja de servir: cerrar sesión y avisar para que el cliente reingrese (en vez de ver errores).
@@ -86,7 +97,8 @@ function Raiz() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        <Logo tamano={200} color="#E5388A" />
+        {/* Misma imagen del splash nativo (esquinas redondeadas), para que no haya salto entre uno y otro */}
+        <Image source={require('./assets/splash-logo.png')} style={{ width: 200, height: 200 }} resizeMode="contain" />
       </View>
     );
   }
