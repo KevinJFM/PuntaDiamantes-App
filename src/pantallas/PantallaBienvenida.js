@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Modal, ActivityIndicator } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Logo from '../componentes/Logo';
-import { solicitarPermisoPush } from '../servicios/notificaciones';
+import { solicitarPermisoPush, marcarPushDesactivado } from '../servicios/notificaciones';
 import { registrarToken } from '../servicios/api';
 
 export default function PantallaBienvenida({ alContinuar }) {
@@ -14,6 +14,13 @@ export default function PantallaBienvenida({ alContinuar }) {
   // "Continuar" ya no entra directo: primero ofrecemos activar las notificaciones (solo la 1ª vez)
   const alPresionarContinuar = () => setFase('pregunta');
 
+  // "Ahora no" / permiso denegado: recordamos que el cliente NO quiere notificaciones, para que
+  // Configuración las muestre APAGADAS y no se registren solas al abrir la app.
+  const rechazar = () => {
+    marcarPushDesactivado(true);
+    alContinuar();
+  };
+
   const activar = async () => {
     setProcesando(true);
     const push = await solicitarPermisoPush(); // aquí aparece el diálogo del sistema
@@ -23,7 +30,8 @@ export default function PantallaBienvenida({ alContinuar }) {
       registrarToken(push.token).catch(() => {}); // guarda el token en el backend
       alContinuar();
     } else if (push.denegado) {
-      setFase('denegado'); // el cliente tocó "No permitir": le explicamos cómo activarlo a mano
+      marcarPushDesactivado(true); // tocó "No permitir": queda apagado en Configuración
+      setFase('denegado');         // le explicamos cómo activarlo a mano
     } else {
       // Expo Go u otro caso sin token: no bloqueamos el ingreso
       alContinuar();
@@ -69,7 +77,7 @@ export default function PantallaBienvenida({ alContinuar }) {
                     ? <ActivityIndicator color="#fff" />
                     : <Text style={estilos.botonPrimarioTxt}>Activar</Text>}
                 </Pressable>
-                <Pressable style={estilos.botonSecundario} onPress={alContinuar} disabled={procesando}>
+                <Pressable style={estilos.botonSecundario} onPress={rechazar} disabled={procesando}>
                   <Text style={estilos.botonSecundarioTxt}>Ahora no</Text>
                 </Pressable>
               </>
@@ -85,7 +93,7 @@ export default function PantallaBienvenida({ alContinuar }) {
                 </Text>
                 <Text style={estilos.ruta}>Ajustes › Aplicaciones › Punta Diamantes › Notificaciones</Text>
 
-                <Pressable style={estilos.botonPrimario} onPress={alContinuar}>
+                <Pressable style={estilos.botonPrimario} onPress={rechazar}>
                   <Text style={estilos.botonPrimarioTxt}>Entendido</Text>
                 </Pressable>
               </>

@@ -5,6 +5,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { obtenerMisMovimientos } from '../servicios/api';
+import { alRecibirNotificacion } from '../servicios/notificaciones';
 import { usarTema } from '../tema/tema';
 
 // Recuerda hasta qué movimiento ya vio el cliente (para el globito de "nuevas")
@@ -80,6 +81,12 @@ export default function CampanaNotificaciones() {
       }
       estadoApp.current = siguiente;
     });
+    return () => sub.remove();
+  }, [cargar]);
+
+  // Refresca al INSTANTE cuando llega un push con la app abierta (recepción: el globo sube solo, sin que el cliente haga nada).
+  useEffect(() => {
+    const sub = alRecibirNotificacion(() => cargar());
     return () => sub.remove();
   }, [cargar]);
 

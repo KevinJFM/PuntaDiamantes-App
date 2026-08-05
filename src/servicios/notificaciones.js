@@ -82,3 +82,7 @@ export const registrarTokenSiHayPermiso = async () => {
 // Suscribe un callback para cuando el usuario TOCA una notificación (para navegar si se quiere)
 export const alTocarNotificacion = (callback) =>
   Notifications.addNotificationResponseReceivedListener(callback);
+
+// Suscribe un callback para cuando LLEGA una notificación con la app abierta (para refrescar la campana al instante)
+export const alRecibirNotificacion = (callback) =>
+  Notifications.addNotificationReceivedListener(callback);

@@ -77,6 +77,64 @@ Android necesita credenciales de **Firebase Cloud Messaging (FCM V1)**:
 
 ### Cópialo a **C:\Users\kevin\Desktop\puntadiamantes-app\google-services.json.**
 
+---
+
+### ⚠️ IMPORTANTE — Permisos en Google Cloud para que la push SE ENTREGUE (FCM V1)
+
+> **Ojo:** subir la clave a EAS NO basta. Si falta esto, Expo acepta el push (da ticket `ok`)
+> pero **FCM lo rechaza con error 403** y **nunca llega al teléfono**. Ya nos pasó (4-ago-2026):
+> el push dejó de llegar porque la cuenta de servicio se quedó sin el rol de FCM.
+> Haz estos 2 pasos (y guárdalos por si vuelve a pasar).
+
+#### Paso A — Habilitar la "Firebase Cloud Messaging API"
+Abre (ya lleva el proyecto): 
+👉 https://console.cloud.google.com/apis/library/fcm.googleapis.com?project=punta-diamantes-78459
+
+- Si ves el botón **"Habilitar"** → clic. (Si ya dice **"Administrar / API habilitada"** → está bien, pasa al Paso B.)
+
+#### Paso B — Dar el rol de FCM a la cuenta de servicio
+Abre IAM: 
+👉 https://console.cloud.google.com/iam-admin/iam?project=punta-diamantes-78459
+
+En la lista busca esta entidad (la cuenta de servicio de Firebase, **NO** tu Gmail):
+```
+firebase-adminsdk-fbsvc@punta-diamantes-78459.iam.gserviceaccount.com
+```
+> Si no aparece, marca el checkbox **"Incluye asignaciones de roles proporcionadas por Google"** (arriba) — las cuentas `firebase-adminsdk` están ocultas por defecto.
+
+**Caso A — SÍ aparece en la lista:**
+1. Clic en el lápiz ✏️ a su derecha.
+2. Clic en **"Agregar otro rol"**.
+3. En el buscador escribe **Firebase Cloud Messaging API Admin** y selecciónalo.
+4. **Guardar**.
+
+**Caso B — NO aparece en la lista:**
+1. Clic en **"Otorgar acceso" / "Grant access"** (arriba).
+2. En **"Principales nuevas"** pega:
+   ```
+   firebase-adminsdk-fbsvc@punta-diamantes-78459.iam.gserviceaccount.com
+   ```
+3. En **Rol** busca y selecciona **"Firebase Cloud Messaging API Admin"** (Administrador de la API de Firebase Cloud Messaging).
+4. **Guardar**.
+
+Después de guardar, **espera ~2 minutos** (Google tarda en propagar el permiso). **NO requiere rebuild** — FCM V1 usa la clave del lado del servidor de Expo.
+
+#### Cómo verificar que quedó bien (sin celular)
+Con el Expo Push Token de un cliente (columna `push_token` en la tabla `clientes`), envía un push de prueba y consulta el recibo:
+```powershell
+# 1) Enviar (guarda el "id" que devuelve)
+$body = @{ to = "ExponentPushToken[...]"; title = "Prueba"; body = "Test"; channelId = "default" } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://exp.host/--/api/v2/push/send" -Method Post -ContentType "application/json" -Body $body
+
+# 2) Consultar el recibo con ese id (espera unos segundos)
+$r = @{ ids = @("EL-ID-DEL-PASO-1") } | ConvertTo-Json
+Invoke-RestMethod -Uri "https://exp.host/--/api/v2/push/getReceipts" -Method Post -ContentType "application/json" -Body $r | ConvertTo-Json -Depth 8
+```
+- Recibo `{"status":"ok"}` → **entregado, todo bien.** ✅
+- Recibo `"status":"error"` con `PERMISSION_DENIED` / 403 → falta el Paso A o B de arriba.
+
+---
+
 ### iOS (APNs) — solo si algún día publican en iPhone
 Con una **cuenta de Apple Developer**, EAS configura los certificados de push (APNs) solo
 durante el build. No necesitas Mac.

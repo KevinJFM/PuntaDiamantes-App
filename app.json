@@ -6,6 +6,10 @@
     "orientation": "portrait",
     "icon": "./assets/icon-pd.png",
     "userInterfaceStyle": "automatic",
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "#00000000"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puntadiamantes.app"
