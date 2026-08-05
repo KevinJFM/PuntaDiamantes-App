@@ -111,7 +111,9 @@ export default function CampanaNotificaciones() {
         <Ionicons name="notifications-outline" size={24} color={colores.texto} />
         {noLeidas > 0 && (
           <View style={estilos.globo}>
-            <Text style={estilos.globoTxt}>{noLeidas > 9 ? '9+' : noLeidas}</Text>
+            <Text style={estilos.globoTxt} allowFontScaling={false}>
+              {noLeidas > 9 ? '9+' : String(noLeidas)}
+            </Text>
           </View>
         )}
       </Pressable>
@@ -167,11 +169,13 @@ export default function CampanaNotificaciones() {
 const crearEstilos = (c) => StyleSheet.create({
   boton: { padding: 4 },
   globo: {
-    position: 'absolute', top: -2, right: -2, minWidth: 18, height: 18, borderRadius: 9,
+    position: 'absolute', top: -3, right: -3, minWidth: 20, height: 20, borderRadius: 10,
     backgroundColor: '#E5388A', alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 4, borderWidth: 2, borderColor: c.fondoBarra,
   },
-  globoTxt: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  // Sin numberOfLines: el globo crece de ancho (minWidth) para que "9+" quepa entero y no se recorte a "...".
+  // includeFontPadding:false evita que Android recorte el "+"; textAlign centra el texto.
+  globoTxt: { color: '#fff', fontSize: 10, fontWeight: '800', textAlign: 'center', includeFontPadding: false },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', paddingTop: 64, paddingHorizontal: 12 },
   panel: {
