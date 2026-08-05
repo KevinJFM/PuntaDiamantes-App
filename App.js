@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StatusBar, Image } from 'react-native';
+import { View, StatusBar, Image, AppState, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
@@ -17,7 +17,7 @@ import * as SplashScreen from 'expo-splash-screen';
 SplashScreen.preventAutoHideAsync();
 
 function Raiz() {
-  const { colores, oscuro } = usarTema();
+  const { colores, oscuro, listo: temaListo } = usarTema();
   const mostrarAviso = usarAvisos();
   const [logueado, setLogueado] = useState(false);
   const [bienvenidaVista, setBienvenidaVista] = useState(true);
@@ -90,14 +90,44 @@ function Raiz() {
   };
 
   const enAzul = mostrarBienvenida || transicion || !logueado;
-  const fondo = enAzul ? colores.azul : colores.fondo;
+  // El área de la barra de estado (arriba) toma el color de lo que va justo debajo: azul en
+  // login/bienvenida; el color del encabezado (fondoBarra) en el home, para que no se cuele una
+  // franja de otro color en la barra de notificaciones (igual que abajo la barra respeta su color).
+  const fondo = enAzul ? colores.azul : colores.fondoBarra;
 
-  // Splash: pantalla blanca con el logo (mientras dura el splash y/o se revisa el token)
-  if (splashActivo || !listo) {
+  // Estilo de los íconos de la barra de estado según el fondo que tienen debajo:
+  //  - claros (light-content) cuando el fondo es oscuro: tema oscuro, o el azul del login/bienvenida
+  //  - oscuros (dark-content) cuando el fondo es claro (tema claro)
+  // En el splash se decide SOLO por el tema (su fondo es el del tema, no el azul), para que el estilo NO
+  // cambie al pasar del splash al home y no se quede "pegado" el de un modo al abrir en el otro.
+  const enSplash = splashActivo || !listo || !temaListo;
+  const barraClara = enSplash ? oscuro : (enAzul || oscuro);
+  const estiloBarra = barraClara ? 'light-content' : 'dark-content';
+
+  // Android a veces resetea la barra de estado al reabrir o volver del segundo plano: la re-aplicamos
+  // —transparente y con el estilo correcto— al montar, al volver a primer plano y si cambia el estilo.
+  useEffect(() => {
+    const aplicarBarra = () => {
+      StatusBar.setBarStyle(estiloBarra);
+      if (Platform.OS === 'android') {
+        StatusBar.setTranslucent(true);
+        StatusBar.setBackgroundColor('transparent', false);
+      }
+    };
+    aplicarBarra();
+    const sub = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') aplicarBarra();
+    });
+    return () => sub.remove();
+  }, [estiloBarra]);
+
+  // Splash / carga: el logo sobre el fondo del tema (claro u oscuro), así los íconos de la barra ya
+  // combinan desde el arranque y no hay salto de color al pasar al home.
+  if (enSplash) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
-        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
-        {/* Misma imagen del splash nativo (esquinas redondeadas), para que no haya salto entre uno y otro */}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colores.fondo }}>
+        <StatusBar barStyle={estiloBarra} backgroundColor="transparent" translucent />
+        {/* El logo (tarjeta rosa) se ve bien tanto sobre fondo claro como oscuro */}
         <Image source={require('./assets/splash-logo.png')} style={{ width: 200, height: 200 }} resizeMode="contain" />
       </View>
     );
@@ -106,7 +136,7 @@ function Raiz() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: fondo }} edges={['top']}>
       <StatusBar
-        barStyle={!enAzul && !oscuro ? 'dark-content' : 'light-content'}
+        barStyle={estiloBarra}
         backgroundColor="transparent"
         translucent
       />

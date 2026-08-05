@@ -42,10 +42,12 @@ export const coloresOscuro = {
   ok: '#34d399',
 };
 
-const ContextoTema = createContext({ oscuro: false, colores: coloresClaro, alternarTema: () => {} });
+const ContextoTema = createContext({ oscuro: false, colores: coloresClaro, alternarTema: () => {}, listo: false });
 
 export function ProveedorTema({ children }) {
-  const [oscuro, setOscuro] = useState(false);
+  // Arranca siguiendo el tema del teléfono (síncrono) para no pintar el primer cuadro en claro y saltar
+  // a oscuro. Luego, si el cliente eligió un tema explícito, se respeta al leer AsyncStorage.
+  const [oscuro, setOscuro] = useState(Appearance.getColorScheme() === 'dark');
   const [listo, setListo] = useState(false);
 
   useEffect(() => {
